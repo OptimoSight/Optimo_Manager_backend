@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self)">
+  <title>Dynamic AR Makeup Filter</title>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+    }
+
+    video,
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    video {
+      transform: scaleX(-1);
+    }
+
+    #status {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      text-align: center;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 18px;
+      text-align: center;
+      z-index: 200;
+    }
+
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+      #status {
+        font-size: 12px;
+        padding: 8px;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+      }
+
+      .loading {
+        font-size: 16px;
+      }
+    }
+
+    /* Prevent scrolling and zooming on mobile */
+    body {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="video-container">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="output"></canvas>
+  </div>
+
+  <div id="status" class="loading">Loading MediaPipe...</div>
+
+  <script type="module">
+    import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0";
+
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('output');
+    const ctx = canvas.getContext('2d');
+
+    let faceLandmarker = null;
+    let latestResults = null;
+    let runningMode = "VIDEO";
+    let isProcessing = false;
+    let frameCount = 0;
+    let lastFrameTime = 0;
+    const TARGET_FPS = 30;
+    const FRAME_TIME = 1000 / TARGET_FPS;
+
+    // Parse URL parameters with better color handling
+    function getUrlParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const pathParts = window.location.pathname.split('/');
+      const category = pathParts[pathParts.length - 1]; // Get category from path
+
+      let color = urlParams.get('color');
+      if (color) {
+        // Handle double encoding and ensure proper hex format
+        color = decodeURIComponent(color);
+        if (color.startsWith('%23')) {
+          color = '#' + color.substring(3);
+        } else if (!color.startsWith('#') && color.length === 6) {
+          color = '#' + color;
+        }
+      }
+
+      const styleName = urlParams.get('style_name');
+
+      return { category, color, styleName };
+    }
+
+    const { category, color, styleName } = getUrlParams();
+    console.log('URL Parameters:', { category, color, styleName });
+    console.log('Parsed color:', color);
+
+    // All makeup parameters as constants
+    const LIP_OPACITY = 0.4;
+    const LIP_GLOSS = 0.1;
+    const LIP_SHIMMER = 0.01;
+    const LIP_BLUR = 3;
+
+    const BLUSH_OPACITY = 3.0;
+    const BLUSH_BLUR = 10;
+    const BLUSH_FEATHER = 0.9;
+    const BLUSH_RADIUS = 1.7;
+
+    const EYESHADOW_OPACITY = 0.5;
+    const EYESHADOW_BLUR = 4;
+
+    const FOUNDATION_OPACITY = 0.2;
+    const FOUNDATION_BLUR = 1.2;
+
+    const CONTOUR_OPACITY = 1.7;
+    const CONTOUR_BLUR = 15;
+
+    const CONCEALER_OPACITY = 2.5;
+    const CONCEALER_BLUR = 20;
+
+    const EYELINER_OPACITY = 0.4;
+    const EYELINER_THICKNESS = 3.0;
+
+    // Default colors for each category
+    const defaultColors = {
+      lipstick: '#FF0000',
+      blush: '#FFB6C1',
+      eyeshadow: { color1: '#736e73', color2: '#dbd7bf' },
+      eyeliner: '#000000',
+      foundation: '#FDBCB4',
+      contour: '#D2B48C',
+      concealer: '#F2C9C0'
+    };
+
+    // Initialize makeup state based on URL parameters
+    const makeupState = {
+      lipstick: {
+        enabled: category === 'lipstick',
+        color: category === 'lipstick' && color ? color : defaultColors.lipstick,
+        opacity: LIP_OPACITY,
+        gloss: LIP_GLOSS,
+        shimmer: LIP_SHIMMER,
+        blur: LIP_BLUR
+      },
+      blush: {
+        enabled: category === 'blush',
+        color: category === 'blush' && color ? color : defaultColors.blush,
+        radius: BLUSH_RADIUS,
+        opacity: BLUSH_OPACITY,
+        blur: BLUSH_BLUR,
+        feather: BLUSH_FEATHER
+      },
+      eyeshadow: {
+        enabled: category === 'eyeshadow',
+        color1: category === 'eyeshadow' && color ? color : defaultColors.eyeshadow.color1,
+        color2: category === 'eyeshadow' && color ? color : defaultColors.eyeshadow.color2,
+        opacity: EYESHADOW_OPACITY,
+        blur: EYESHADOW_BLUR
+      },
+      eyeliner: {
+        enabled: category === 'eyeliner',
+        color: category === 'eyeliner' && color ? color : defaultColors.eyeliner,
+        opacity: EYELINER_OPACITY,
+        thickness: EYELINER_THICKNESS
+      },
+      foundation: {
+        enabled: category === 'foundation',
+        color: category === 'foundation' && color ? color : defaultColors.foundation,
+        opacity: FOUNDATION_OPACITY,
+        blur: FOUNDATION_BLUR
+      },
+      contour: {
+        enabled: category === 'contour',
+        color: category === 'contour' && color ? color : defaultColors.contour,
+        opacity: CONTOUR_OPACITY,
+        blur: CONTOUR_BLUR
+      },
+      concealer: {
+        enabled: category === 'concealer',
+        color: category === 'concealer' && color ? color : defaultColors.concealer,
+        opacity: CONCEALER_OPACITY,
+        blur: CONCEALER_BLUR
+      }
+    };
+
+    console.log('Makeup State:', makeupState);
+
+    // Landmark indices
+    const LIPS_OUTER = [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146];
+    const LIPS_INNER = [78, 191, 80, 81, 82, 13, 312, 311, 310, 415, 308, 324, 318, 402, 317, 14, 87, 178, 88, 95];
+    const BLUSH_PTS = [50, 205, 280, 425];
+    const FACE_OVAL = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
+
+    // Eye landmarks
+    const LEFT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246];
+    const RIGHT_EYE = [362, 398, 384, 385, 386, 387, 388, 466, 263, 249, 390, 373, 374, 380, 381, 382];
+    const LEFT_EYE_UPPER = [56, 222, 223, 224, 225, 156, 124, 130, 113, 30, 29, 27, 28, 56];
+    const LEFT_EYE_LOWER = [56, 28, 27, 29, 30, 113, 130, 246, 161, 160, 159, 158, 157, 173, 56];
+    const RIGHT_EYE_UPPER = [286, 442, 443, 444, 445, 383, 353, 359, 342, 260, 259, 257, 258, 286];
+    const RIGHT_EYE_LOWER = [286, 258, 257, 259, 260, 342, 359, 466, 388, 387, 386, 385, 384, 398, 286];
+
+    // Contour landmarks
+    const LEFT_CHEEKBONES_CONTOUR = [234, 147, 207];
+    const RIGHT_CHEEKBONES_CONTOUR = [454, 376, 427];
+    const NOSE_LEFT_CONTOUR = [45, 51, 3, 196, 122];
+    const NOSE_RIGHT_CONTOUR = [275, 281, 248, 419, 351];
+    const LEFT_CHEEKBONES_BORDER_CONTOUR = [116, 127, 119, 165, 57, 127];
+    const RIGHT_CHEEKBONES_BORDER_CONTOUR = [345, 356, 348, 391, 287, 356];
+
+    // Concealer landmarks
+    const LEFT_EYE_CONCEALER = [190, 233, 47, 142, 205, 50, 143, 190];
+    const RIGHT_EYE_CONCEALER = [414, 453, 277, 371, 425, 280, 372, 414];
+
+    let outerHistory = [], innerHistory = [], blushHistory = [];
+    const MAX_HISTORY = 3;
+
+    // Pre-allocate canvas objects to avoid creating them every frame
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    const blurCanvas = document.createElement('canvas');
+    const blurCtx = blurCanvas.getContext('2d');
+
+    // Initialize MediaPipe
+    async function initializeMediaPipe() {
+      document.getElementById('status').textContent = 'Loading MediaPipe Face Landmarker...';
+
+      try {
+        const filesetResolver = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
+        );
+
+        faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
+            delegate: "GPU"
+          },
+          outputFaceBlendshapes: false,
+          outputFacialTransformationMatrixes: false,
+          runningMode: runningMode,
+          numFaces: 1
+        });
+
+        console.log('MediaPipe Face Landmarker loaded successfully');
+        document.getElementById('status').textContent = 'MediaPipe loaded! Starting camera...';
+        return true;
+      } catch (error) {
+        console.error('MediaPipe loading error:', error);
+        document.getElementById('status').textContent = 'Error loading MediaPipe: ' + error.message;
+        return false;
+      }
+    }
+
+    // Setup webcam with mobile optimizations
+    async function setupWebcam() {
+      try {
+        console.log('Requesting camera access...');
+
+        // Mobile-specific camera constraints
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        const constraints = {
+          video: {
+            facingMode: 'user',
+            width: isMobile ? { ideal: 480, max: 640 } : { ideal: 640 },
+            height: isMobile ? { ideal: 360, max: 480 } : { ideal: 480 },
+            frameRate: { ideal: 30, max: 30 }
+          }
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+
+        return new Promise(resolve => {
+          video.onloadedmetadata = () => {
+            video.play().then(() => {
+              // Set canvas dimensions based on video
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              tempCanvas.width = video.videoWidth;
+              tempCanvas.height = video.videoHeight;
+              blurCanvas.width = video.videoWidth;
+              blurCanvas.height = video.videoHeight;
+
+              console.log(`Canvas size: ${canvas.width}x${canvas.height}`);
+              console.log('Device type:', isMobile ? 'Mobile' : 'Desktop');
+
+              document.getElementById('status').textContent = `${category} makeup ready! Applying ${color || 'default'} color`;
+
+              // Hide status after 3 seconds
+              setTimeout(() => {
+                const statusEl = document.getElementById('status');
+                if (statusEl) {
+                  statusEl.style.opacity = '0';
+                  setTimeout(() => statusEl.style.display = 'none', 500);
+                }
+              }, 3000);
+
+              resolve(video);
+            }).catch(error => {
+              console.error('Video play error:', error);
+              document.getElementById('status').textContent = 'Error starting video playback';
+            });
+          };
+
+          video.onerror = (error) => {
+            console.error('Video error:', error);
+            document.getElementById('status').textContent = 'Video loading error';
+          };
+        });
+      } catch (error) {
+        console.error('Camera error:', error);
+        document.getElementById('status').textContent = `Camera access denied: ${error.message}`;
+      }
+    }
+
+    // Utility functions
+    function smoothPoints(landmarks, indices, historyArray) {
+      if (!landmarks || landmarks.length < Math.max(...indices)) {
+        return [];
+      }
+
+      const points = indices.map(i => ({
+        x: landmarks[i].x * canvas.width,
+        y: landmarks[i].y * canvas.height
+      }));
+
+      historyArray.push(points);
+      if (historyArray.length > MAX_HISTORY) {
+        historyArray.shift();
+      }
+
+      return points.map((_, idx) => {
+        let sumX = 0, sumY = 0;
+        historyArray.forEach(frame => {
+          sumX += frame[idx].x;
+          sumY += frame[idx].y;
+        });
+        return {
+          x: sumX / historyArray.length,
+          y: sumY / historyArray.length
+        };
+      });
+    }
+
+    function euclideanDistance(p1, p2) {
+      return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    }
+
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
+    }
+
+    function getLandmarkPoints(landmarks, indices) {
+      if (!landmarks || landmarks.length < Math.max(...indices)) {
+        return [];
+      }
+      return indices.map(i => ({
+        x: canvas.width - landmarks[i].x * canvas.width,
+        y: landmarks[i].y * canvas.height
+      }));
+    }
+
+    // Create gradient for smooth blending
+    function createSmoothGradient(ctx, centerX, centerY, radius, color, opacity) {
+      const gradient = ctx.createRadialGradient(
+        centerX, centerY, 0,
+        centerX, centerY, radius
+      );
+      const rgb = hexToRgb(color);
+      gradient.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`);
+      gradient.addColorStop(0.7, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity * 0.3})`);
+      gradient.addColorStop(1, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0)`);
+      return gradient;
+    }
+
+    // Optimized blur function that reuses canvases
+    function applyBlur(sourceCtx, blurAmount) {
+      blurCtx.clearRect(0, 0, blurCanvas.width, blurCanvas.height);
+      blurCtx.filter = `blur(${blurAmount}px)`;
+      blurCtx.drawImage(sourceCtx.canvas, 0, 0);
+      blurCtx.filter = 'none';
+      return blurCtx.getImageData(0, 0, blurCanvas.width, blurCanvas.height);
+    }
+
+    // Draw foundation effect
+    function drawFoundation() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) {
+        return;
+      }
+
+      const landmarks = latestResults.faceLandmarks[0];
+      const facePoints = getLandmarkPoints(landmarks, FACE_OVAL);
+
+      if (facePoints.length === 0) return;
+
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.beginPath();
+      facePoints.forEach((point, i) => {
+        if (i === 0) {
+          tempCtx.moveTo(point.x, point.y);
+        } else {
+          tempCtx.lineTo(point.x, point.y);
+        }
+      });
+      tempCtx.closePath();
+
+      tempCtx.globalAlpha = makeupState.foundation.opacity;
+      tempCtx.fillStyle = makeupState.foundation.color;
+      tempCtx.fill();
+
+      const blurredImageData = applyBlur(tempCtx, makeupState.foundation.blur);
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.putImageData(blurredImageData, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 0.7;
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    // Draw gradient eyeshadow
+    function drawEyeshadow() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) {
+        return;
+      }
+
+      const landmarks = latestResults.faceLandmarks[0];
+
+      const leftUpperPoints = getLandmarkPoints(landmarks, LEFT_EYE_UPPER);
+      const leftLowerPoints = getLandmarkPoints(landmarks, LEFT_EYE_LOWER);
+      const rightUpperPoints = getLandmarkPoints(landmarks, RIGHT_EYE_UPPER);
+      const rightLowerPoints = getLandmarkPoints(landmarks, RIGHT_EYE_LOWER);
+
+      if (leftUpperPoints.length === 0 || rightUpperPoints.length === 0) return;
+
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Draw eyeshadow with gradient
+      [leftUpperPoints, leftLowerPoints, rightUpperPoints, rightLowerPoints].forEach((points, index) => {
+        if (points.length === 0) return;
+
+        // Calculate center and bounds for gradient
+        const minX = Math.min(...points.map(p => p.x));
+        const maxX = Math.max(...points.map(p => p.x));
+        const minY = Math.min(...points.map(p => p.y));
+        const maxY = Math.max(...points.map(p => p.y));
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Create gradient
+        const gradient = tempCtx.createRadialGradient(
+          centerX, centerY, 0,
+          centerX, centerY, Math.max(maxX - minX, maxY - minY) / 2
+        );
+        gradient.addColorStop(0, makeupState.eyeshadow.color1);
+        gradient.addColorStop(1, makeupState.eyeshadow.color2);
+
+        tempCtx.beginPath();
+        points.forEach((point, i) => {
+          if (i === 0) {
+            tempCtx.moveTo(point.x, point.y);
+          } else {
+            tempCtx.lineTo(point.x, point.y);
+          }
+        });
+        tempCtx.closePath();
+
+        tempCtx.globalAlpha = 0.5;
+        tempCtx.fillStyle = gradient;
+        tempCtx.fill();
+      });
+
+      const blurredImageData = applyBlur(tempCtx, 4);
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.putImageData(blurredImageData, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = 0.8;
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    // Eyeliner with bold winged style
+    function drawEyeliner() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) return;
+
+      const landmarks = latestResults.faceLandmarks[0];
+
+      ctx.save();
+      ctx.strokeStyle = makeupState.eyeliner.color;
+      ctx.fillStyle = makeupState.eyeliner.color;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = makeupState.eyeliner.opacity;
+
+      function getXY(idx) {
+        return {
+          x: canvas.width - landmarks[idx].x * canvas.width,
+          y: landmarks[idx].y * canvas.height,
+        };
+      }
+
+      function euclideanDistance(p1, p2) {
+        return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+      }
+
+      function drawEyeLinerPath(indices, wingUpwardDir) {
+        const lashPoints = indices.map(i => getXY(i));
+        const inner = lashPoints[0];
+        const outer = lashPoints[lashPoints.length - 1];
+
+        // Inner taper
+        const nextPoint = lashPoints[1];
+        const innerOffset = {
+          x: inner.x + (nextPoint.x - inner.x) * 0.3,
+          y: inner.y + (nextPoint.y - inner.y) * 0.3,
+        };
+
+        // Draw lash-hugging line
+        ctx.lineWidth = makeupState.eyeliner.thickness || 1.0;
+        ctx.beginPath();
+        ctx.moveTo(innerOffset.x, innerOffset.y);
+        for (let i = 1; i < lashPoints.length; i++) {
+          ctx.lineTo(lashPoints[i].x, lashPoints[i].y);
+        }
+        ctx.stroke();
+
+        // Wing
+        const lastPoint = lashPoints[lashPoints.length - 1];
+        const prevPoint = lashPoints[lashPoints.length - 2];
+
+        // Tangent along eyelid
+        const tangentX = lastPoint.x - prevPoint.x;
+        const tangentY = lastPoint.y - prevPoint.y;
+
+        // Slightly upward angle
+        const wingAngle = Math.atan2(tangentY, tangentX) - wingUpwardDir * Math.PI / 4;
+
+        const eyeLength = euclideanDistance(inner, outer);
+        const wingLength = eyeLength * 0.34;
+
+        // Wing tip
+        const wingTip = {
+          x: lastPoint.x + Math.cos(wingAngle) * wingLength,
+          y: lastPoint.y + Math.sin(wingAngle) * wingLength * 0.6,
+        };
+
+        // Control point for smooth curve
+        const controlPoint = {
+          x: lastPoint.x + (wingTip.x - lastPoint.x) * 0.5,
+          y: lastPoint.y + (wingTip.y - lastPoint.y) * 0.2,
+        };
+
+        // Taper line width from lash to tip
+        const taperSteps = 8;
+        for (let i = 0; i < taperSteps; i++) {
+          const t = i / taperSteps;
+          const x = lastPoint.x + (controlPoint.x - lastPoint.x) * t + (wingTip.x - controlPoint.x) * t * t;
+          const y = lastPoint.y + (controlPoint.y - lastPoint.y) * t + (wingTip.y - controlPoint.y) * t * t;
+          ctx.lineWidth = makeupState.eyeliner.thickness * (1 - t * 0.9);
+          if (i === 0) ctx.beginPath(), ctx.moveTo(lastPoint.x, lastPoint.y);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+      }
+
+      // Left eye
+      drawEyeLinerPath([133, 173, 157, 158, 159, 160, 161, 246, 33], +1);
+
+      // Right eye
+      drawEyeLinerPath([362, 398, 384, 385, 386, 387, 388, 466, 263], -1);
+
+      ctx.restore();
+    }
+
+    // Improved contour with smooth edge blending
+    function drawContour() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) {
+        return;
+      }
+
+      const landmarks = latestResults.faceLandmarks[0];
+      const leftCheekPoints = getLandmarkPoints(landmarks, LEFT_CHEEKBONES_CONTOUR);
+      const rightCheekPoints = getLandmarkPoints(landmarks, RIGHT_CHEEKBONES_CONTOUR);
+      const noseLeftPoints = getLandmarkPoints(landmarks, NOSE_LEFT_CONTOUR);
+      const noseRightPoints = getLandmarkPoints(landmarks, NOSE_RIGHT_CONTOUR);
+
+      if (leftCheekPoints.length === 0 || rightCheekPoints.length === 0) return;
+
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Draw smooth contour areas instead of lines
+      function drawSmoothContourArea(points, intensity = 0.3) {
+        if (points.length < 3) return;
+
+        // Calculate center point
+        const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+        const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+
+        // Calculate average radius
+        const avgRadius = points.reduce((sum, p) => {
+          return sum + Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
+        }, 0) / points.length;
+
+        // Create smooth gradient
+        const gradient = createSmoothGradient(
+          tempCtx, centerX, centerY, avgRadius * 1.5,
+          makeupState.contour.color, intensity
+        );
+
+        tempCtx.fillStyle = gradient;
+        tempCtx.beginPath();
+        tempCtx.arc(centerX, centerY, avgRadius * 1.5, 0, Math.PI * 2);
+        tempCtx.fill();
+      }
+
+      // Apply contour to cheekbones
+      drawSmoothContourArea(leftCheekPoints, 0.4);
+      drawSmoothContourArea(rightCheekPoints, 0.4);
+
+      // Apply subtle nose contour
+      if (noseLeftPoints.length > 0) {
+        drawSmoothContourArea(noseLeftPoints, 0.25);
+      }
+      if (noseRightPoints.length > 0) {
+        drawSmoothContourArea(noseRightPoints, 0.25);
+      }
+
+      // Apply heavy blur for natural blending
+      const blurredImageData = applyBlur(tempCtx, makeupState.contour.blur);
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.putImageData(blurredImageData, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = makeupState.contour.opacity;
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    // Improved concealer with natural blending
+    function drawConcealer() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) {
+        return;
+      }
+
+      const landmarks = latestResults.faceLandmarks[0];
+      const leftEyeArea = getLandmarkPoints(landmarks, LEFT_EYE_CONCEALER);
+      const rightEyeArea = getLandmarkPoints(landmarks, RIGHT_EYE_CONCEALER);
+
+      if (leftEyeArea.length === 0 || rightEyeArea.length === 0) return;
+
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      function drawSmoothConcealerArea(points, intensity = 0.6) {
+        if (points.length < 3) return;
+
+        // Calculate center and average radius
+        const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+        const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+        const avgRadius = points.reduce((sum, p) => {
+          return sum + Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
+        }, 0) / points.length;
+
+        // Create smooth gradient for natural blending
+        const gradient = createSmoothGradient(
+          tempCtx, centerX, centerY, avgRadius * 1.8,
+          makeupState.concealer.color, intensity
+        );
+
+        tempCtx.fillStyle = gradient;
+        tempCtx.beginPath();
+        tempCtx.arc(centerX, centerY, avgRadius * 1.8, 0, Math.PI * 2);
+        tempCtx.fill();
+      }
+
+      // Apply concealer to under-eye areas
+      drawSmoothConcealerArea(leftEyeArea, 0.5);
+      drawSmoothConcealerArea(rightEyeArea, 0.5);
+
+      // Apply extra heavy blur for seamless blending
+      const blurredImageData = applyBlur(tempCtx, makeupState.concealer.blur);
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.putImageData(blurredImageData, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = makeupState.concealer.opacity;
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    // Draw lipstick effect
+    function drawLipstick() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) {
+        return;
+      }
+
+      const landmarks = latestResults.faceLandmarks[0];
+
+      const outerPoints = smoothPoints(landmarks, LIPS_OUTER, outerHistory);
+      const innerPoints = smoothPoints(landmarks, LIPS_INNER, innerHistory);
+
+      if (outerPoints.length === 0 || innerPoints.length === 0) {
+        return;
+      }
+
+      const outer = outerPoints.map(p => ({ x: canvas.width - p.x, y: p.y }));
+      const inner = innerPoints.map(p => ({ x: canvas.width - p.x, y: p.y }));
+
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.beginPath();
+      outer.forEach((point, i) => {
+        if (i === 0) {
+          tempCtx.moveTo(point.x, point.y);
+        } else {
+          tempCtx.lineTo(point.x, point.y);
+        }
+      });
+      tempCtx.closePath();
+
+      inner.forEach((point, i) => {
+        if (i === 0) {
+          tempCtx.moveTo(point.x, point.y);
+        } else {
+          tempCtx.lineTo(point.x, point.y);
+        }
+      });
+      tempCtx.closePath();
+
+      tempCtx.globalAlpha = makeupState.lipstick.opacity;
+      tempCtx.fillStyle = makeupState.lipstick.color;
+      tempCtx.fill('evenodd');
+
+      const blurredImageData = applyBlur(tempCtx, makeupState.lipstick.blur);
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.putImageData(blurredImageData, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+
+      // Add gloss
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = makeupState.lipstick.gloss;
+
+      const centerX = outer.reduce((sum, p) => sum + p.x, 0) / outer.length;
+      const centerY = outer.reduce((sum, p) => sum + p.y, 0) / outer.length;
+
+      const glossGradient = ctx.createRadialGradient(
+        centerX, centerY - 8, 0,
+        centerX, centerY - 8, 25
+      );
+      glossGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+      glossGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+      ctx.fillStyle = glossGradient;
+
+      ctx.beginPath();
+      outer.forEach((point, i) => {
+        if (i === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.closePath();
+      inner.forEach((point, i) => {
+        if (i === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.closePath();
+
+      ctx.fill('evenodd');
+      ctx.restore();
+    }
+
+    // Draw blush effect with adjustable radius
+    function drawBlush() {
+      if (!latestResults || !latestResults.faceLandmarks || latestResults.faceLandmarks.length === 0) {
+        return;
+      }
+
+      const landmarks = latestResults.faceLandmarks[0];
+      const blushPoints = smoothPoints(landmarks, BLUSH_PTS, blushHistory);
+
+      if (blushPoints.length < 4) {
+        return;
+      }
+
+      const mirroredPoints = blushPoints.map(p => ({ x: canvas.width - p.x, y: p.y }));
+
+      const leftRadius = euclideanDistance(mirroredPoints[0], mirroredPoints[1]) * makeupState.blush.radius;
+      const rightRadius = euclideanDistance(mirroredPoints[2], mirroredPoints[3]) * makeupState.blush.radius;
+
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      const blushRgb = hexToRgb(makeupState.blush.color);
+
+      // Draw left cheek blush
+      const leftGradient = tempCtx.createRadialGradient(
+        mirroredPoints[0].x, mirroredPoints[0].y, 0,
+        mirroredPoints[0].x, mirroredPoints[0].y, leftRadius
+      );
+      leftGradient.addColorStop(0, `rgba(${blushRgb.r}, ${blushRgb.g}, ${blushRgb.b}, 0.6)`);
+      leftGradient.addColorStop(0.6, `rgba(${blushRgb.r}, ${blushRgb.g}, ${blushRgb.b}, 0.3)`);
+      leftGradient.addColorStop(1, `rgba(${blushRgb.r}, ${blushRgb.g}, ${blushRgb.b}, 0)`);
+
+      tempCtx.fillStyle = leftGradient;
+      tempCtx.beginPath();
+      tempCtx.arc(mirroredPoints[0].x, mirroredPoints[0].y, leftRadius, 0, Math.PI * 2);
+      tempCtx.fill();
+
+      // Draw right cheek blush
+      const rightGradient = tempCtx.createRadialGradient(
+        mirroredPoints[2].x, mirroredPoints[2].y, 0,
+        mirroredPoints[2].x, mirroredPoints[2].y, rightRadius
+      );
+      rightGradient.addColorStop(0, `rgba(${blushRgb.r}, ${blushRgb.g}, ${blushRgb.b}, 0.6)`);
+      rightGradient.addColorStop(0.6, `rgba(${blushRgb.r}, ${blushRgb.g}, ${blushRgb.b}, 0.3)`);
+      rightGradient.addColorStop(1, `rgba(${blushRgb.r}, ${blushRgb.g}, ${blushRgb.b}, 0)`);
+
+      tempCtx.fillStyle = rightGradient;
+      tempCtx.beginPath();
+      tempCtx.arc(mirroredPoints[2].x, mirroredPoints[2].y, rightRadius, 0, Math.PI * 2);
+      tempCtx.fill();
+
+      const blurredImageData = applyBlur(tempCtx, makeupState.blush.blur);
+      tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tempCtx.putImageData(blurredImageData, 0, 0);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = makeupState.blush.opacity;
+      ctx.drawImage(tempCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    // Main drawing function
+    function drawMakeup() {
+      // Skip frame if we're still processing the previous one
+      const now = performance.now();
+      if (isProcessing || (now - lastFrameTime) < FRAME_TIME) {
+        requestAnimationFrame(drawMakeup);
+        return;
+      }
+
+      isProcessing = true;
+      lastFrameTime = now;
+      frameCount++;
+
+      // Clear and draw video
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      if (!latestResults) {
+        isProcessing = false;
+        requestAnimationFrame(drawMakeup);
+        return;
+      }
+
+      // Apply makeup based on category from URL
+      if (makeupState.foundation.enabled) {
+        drawFoundation();
+      }
+
+      if (makeupState.concealer.enabled) {
+        drawConcealer();
+      }
+
+      if (makeupState.contour.enabled) {
+        drawContour();
+      }
+
+      if (makeupState.eyeshadow.enabled) {
+        drawEyeshadow();
+      }
+
+      if (makeupState.eyeliner.enabled) {
+        drawEyeliner();
+      }
+
+      if (makeupState.blush.enabled) {
+        drawBlush();
+      }
+
+      if (makeupState.lipstick.enabled) {
+        drawLipstick();
+      }
+
+      isProcessing = false;
+      requestAnimationFrame(drawMakeup);
+    }
+
+    let lastVideoTime = -1;
+
+    // Detection and render loop
+    function predictWebcam() {
+      if (video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+
+        try {
+          const startTimeMs = performance.now();
+          const results = faceLandmarker.detectForVideo(video, startTimeMs);
+
+          if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+            latestResults = results;
+            document.getElementById('status').textContent = `Face detected! Applying ${category} makeup with ${color || 'default'} color`;
+          } else {
+            latestResults = null;
+            document.getElementById('status').textContent = 'Looking for face... Make sure you\'re well-lit and centered';
+          }
+        } catch (error) {
+          console.error('Detection error:', error);
+        }
+      }
+
+      requestAnimationFrame(predictWebcam);
+    }
+
+    // Initialize everything with enhanced debugging
+    async function init() {
+      console.log('Initializing makeup filter...');
+      console.log('Category:', category);
+      console.log('Color:', color);
+      console.log('User Agent:', navigator.userAgent);
+
+      // Add debug info to status
+      document.getElementById('status').textContent = `Loading ${category} makeup (${color})...`;
+
+      const mediaPipeLoaded = await initializeMediaPipe();
+      if (!mediaPipeLoaded) {
+        document.getElementById('status').textContent = 'Failed to load MediaPipe. Please refresh the page.';
+        return;
+      }
+
+      await setupWebcam();
+      predictWebcam();
+      drawMakeup();
+
+      // Validate makeup state after initialization
+      console.log('Final makeup state:', makeupState);
+
+      // Post message to parent window when ready (for iframe communication)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'MAKEUP_READY',
+          category: category,
+          color: color,
+          enabled: makeupState[category]?.enabled
+        }, '*');
+      }
+    }
+
+    // Listen for messages from parent window
+    window.addEventListener('message', function (event) {
+      console.log('Received message:', event.data);
+
+      if (event.data.type === 'UPDATE_COLOR') {
+        const newColor = event.data.color;
+        const category = event.data.category;
+
+        if (makeupState[category]) {
+          if (category === 'eyeshadow') {
+            makeupState[category].color1 = newColor;
+            makeupState[category].color2 = newColor;
+          } else {
+            makeupState[category].color = newColor;
+          }
+          console.log(`Updated ${category} color to:`, newColor);
+
+          // Send confirmation back
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'COLOR_UPDATED',
+              category: category,
+              color: newColor,
+              success: true
+            }, '*');
+          }
+        }
+      } else if (event.data.type === 'TOGGLE_MAKEUP') {
+        const category = event.data.category;
+        const enabled = event.data.enabled;
+
+        if (makeupState[category]) {
+          makeupState[category].enabled = enabled;
+          console.log(`${category} makeup ${enabled ? 'enabled' : 'disabled'}`);
+
+          // Send confirmation back
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'MAKEUP_TOGGLED',
+              category: category,
+              enabled: enabled,
+              success: true
+            }, '*');
+          }
+        }
+      } else if (event.data.type === 'APPLY_MAKEUP') {
+        // Handle new makeup application
+        const makeup = event.data.makeup;
+        if (makeupState[makeup.type]) {
+          if (makeup.type === 'eyeshadow') {
+            makeupState[makeup.type].color1 = makeup.color1 || makeup.color;
+            makeupState[makeup.type].color2 = makeup.color2 || makeup.color;
+          } else {
+            makeupState[makeup.type].color = makeup.color;
+          }
+          makeupState[makeup.type].enabled = true;
+          console.log(`Applied ${makeup.type} makeup:`, makeup.color);
+
+          // Send confirmation back
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'MAKEUP_APPLIED',
+              makeup: makeup,
+              success: true
+            }, '*');
+          }
+        }
+      } else if (event.data.type === 'REMOVE_MAKEUP') {
+        // Handle makeup removal
+        const styleId = event.data.styleId;
+        const category = event.data.category;
+
+        if (category && makeupState[category]) {
+          makeupState[category].enabled = false;
+          console.log(`Disabled ${category} makeup for removal`);
+
+          // Send confirmation back
+          if (window.parent && window.parent !== window) {
+            window.parent.postMessage({
+              type: 'MAKEUP_REMOVED',
+              styleId: styleId,
+              category: category,
+              success: true
+            }, '*');
+          }
+        }
+      } else if (event.data.type === 'RESET_ALL_MAKEUP') {
+        // Handle complete reset
+        console.log('Resetting all makeup from iframe...');
+
+        // Disable all makeup types
+        Object.keys(makeupState).forEach(makeupType => {
+          makeupState[makeupType].enabled = false;
+        });
+
+        // Clear history arrays
+        outerHistory = [];
+        innerHistory = [];
+        blushHistory = [];
+
+        console.log('All makeup disabled and history cleared');
+
+        // Send confirmation back
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'ALL_MAKEUP_RESET',
+            success: true
+          }, '*');
+        }
+      }
+    });
+
+    // Start when ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Expose functions to window for external control (optional)
+    window.makeupFilter = {
+      updateColor: function (newColor) {
+        if (makeupState[category]) {
+          if (category === 'eyeshadow') {
+            makeupState[category].color1 = newColor;
+            makeupState[category].color2 = newColor;
+          } else {
+            makeupState[category].color = newColor;
+          }
+          console.log(`Updated ${category} color to:`, newColor);
+        }
+      },
+      toggleMakeup: function (enabled = null) {
+        if (makeupState[category]) {
+          makeupState[category].enabled = enabled !== null ? enabled : !makeupState[category].enabled;
+          console.log(`${category} makeup ${makeupState[category].enabled ? 'enabled' : 'disabled'}`);
+        }
+      },
+      getCurrentState: function () {
+        return { category, color, enabled: makeupState[category]?.enabled };
+      }
+    };
+  </script>
+</body>
+
+</html>

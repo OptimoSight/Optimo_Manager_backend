@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce VTO Widget Example</title>
+    <link rel="stylesheet" href="/static/css/vto-widget.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 18px;
+            color: #64748b;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-image {
+            height: 200px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            position: relative;
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .product-description {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .product-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 16px;
+        }
+
+        .color-options {
+            margin-bottom: 16px;
+        }
+
+        .color-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .color-swatches {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch.active {
+            border-color: #1e293b;
+            box-shadow: 0 0 0 2px white, 0 0 0 4px #1e293b;
+        }
+
+        .color-swatch::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border-radius: 50%;
+            background: inherit;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .add-to-cart-btn {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3);
+        }
+
+        .add-to-cart-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+        }
+
+        .integration-info {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 2px dashed #e2e8f0;
+        }
+
+        .integration-info h2 {
+            color: #1e293b;
+            margin-bottom: 16px;
+        }
+
+        .code-snippet {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+
+        .highlight {
+            background: rgba(139, 92, 246, 0.2);
+            padding: 2px 4px;
+            border-radius: 4px;
+            color: #a855f7;
+        }
+
+        @media (max-width: 768px) {
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .add-to-cart-btn,
+            .vto-try-now-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Beauty Store - Virtual Try-On Demo</h1>
+            <p>Experience makeup virtually before you buy</p>
+        </div>
+
+        <div class="products-grid">
+            <!-- Lipstick Product -->
+            <div class="product-card">
+                <div class="product-image">
+                    💋
+                    <div class="product-badge">BESTSELLER</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Ultra Matte Lipstick</h3>
+                    <p class="product-description">
+                        Long-lasting matte finish that stays put for up to 12 hours.
+                        Enriched with vitamin E for comfortable wear.
+                    </p>
+                    <div class="product-price">$24.99</div>
+
+                    <div class="color-options">
+                        <div class="color-label">Choose Color:</div>
+                        <div class="color-swatches">
+                            <div class="color-swatch active" style="background: #dc2626" data-color="#dc2626"
+                                data-name="Ruby Red"></div>
+                            <div class="color-swatch" style="background: #e91e63" data-color="#e91e63"
+                                data-name="Rose Pink"></div>
+                            <div class="color-swatch" style="background: #7c2d12" data-color="#7c2d12"
+                                data-name="Chocolate"></div>
+                            <div class="color-swatch" style="background: #991b1b" data-color="#991b1b"
+                                data-name="Deep Red"></div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="add-to-cart-btn" onclick="addToCart('lipstick')">
+                            Add to Cart
+                        </button>
+                        <button class="vto-try-now-btn" id="lipstick-try-btn" data-category="lipstick"
+                            data-color="#dc2626" data-color-name="Ruby Red" data-product-name="Ultra Matte Lipstick"
+                            data-api-key="OptimosightGuest999" data-mode="both"
+                            data-colors="#dc2626,#e91e63,#7c2d12,#991b1b"
+                            data-color-names="Ruby Red,Rose Pink,Chocolate,Deep Red">
+                            ✨ Try Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eyeshadow Product -->
+            <div class="product-card">
+                <div class="product-image">
+                    👁️
+                    <div class="product-badge">NEW</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Shimmer Eyeshadow Palette</h3>
+                    <p class="product-description">
+                        12 highly pigmented shades perfect for creating versatile looks
+                        from natural to dramatic.
+                    </p>
+                    <div class="product-price">$45.99</div>
+
+                    <div class="color-options">
+                        <div class="color-label">Choose Shade:</div>
+                        <div class="color-swatches">
+                            <div class="color-swatch active" style="background: #8b5cf6" data-color="#8b5cf6"
+                                data-name="Purple Haze"></div>
+                            <div class="color-swatch" style="background: #3b82f6" data-color="#3b82f6"
+                                data-name="Ocean Blue"></div>
+                            <div class="color-swatch" style="background: #10b981" data-color="#10b981"
+                                data-name="Emerald"></div>
+                            <div class="color-swatch" style="background: #f59e0b" data-color="#f59e0b"
+                                data-name="Golden"></div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="add-to-cart-btn" onclick="addToCart('eyeshadow')">
+                            Add to Cart
+                        </button>
+                        <button class="vto-try-now-btn" id="eyeshadow-try-btn" data-category="eyeshadow"
+                            data-color="#8b5cf6" data-color-name="Purple Haze"
+                            data-product-name="Shimmer Eyeshadow Palette" data-api-key="OptimosightGuest999"
+                            data-mode="both" data-colors="#8b5cf6,#3b82f6,#10b981,#f59e0b"
+                            data-color-names="Purple Haze,Ocean Blue,Emerald,Golden">
+                            ✨ Try Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blush Product -->
+            <div class="product-card">
+                <div class="product-image">
+                    🌸
+                </div>
+                <div class="product-info">
+                    <h3 class="product-title">Natural Glow Blush</h3>
+                    <p class="product-description">
+                        Buildable powder blush for a natural, healthy-looking flush.
+                        Blends seamlessly for all-day wear.
+                    </p>
+                    <div class="product-price">$19.99</div>
+
+                    <div class="color-options">
+                        <div class="color-label">Choose Shade:</div>
+                        <div class="color-swatches">
+                            <div class="color-swatch active" style="background: #f472b6" data-color="#f472b6"
+                                data-name="Coral Sunset"></div>
+                            <div class="color-swatch" style="background: #ec4899" data-color="#ec4899"
+                                data-name="Pink Glow"></div>
+                            <div class="color-swatch" style="background: #f97316" data-color="#f97316"
+                                data-name="Peach"></div>
+                            <div class="color-swatch" style="background: #be1856" data-color="#be1856"
+                                data-name="Berry Blush"></div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="add-to-cart-btn" onclick="addToCart('blush')">
+                            Add to Cart
+                        </button>
+                        <button class="vto-try-now-btn" id="blush-try-btn" data-category="blush" data-color="#f472b6"
+                            data-color-name="Coral Sunset" data-product-name="Natural Glow Blush"
+                            data-api-key="OptimosightGuest999" data-mode="both"
+                            data-colors="#f472b6,#ec4899,#f97316,#be1856"
+                            data-color-names="Coral Sunset,Pink Glow,Peach,Berry Blush">
+                            ✨ Try Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="integration-info">
+            <h2>🚀 How to Integrate This Widget</h2>
+            <p>This is how easy it is to add virtual try-on to your e-commerce site:</p>
+
+            <h3>1. Include the Widget Files</h3>
+            <div class="code-snippet">
+                &lt;!-- In your HTML head --&gt;
+                &lt;link rel="stylesheet" href="<span
+                    class="highlight">https://localhost:42413/static/css/vto-widget.css</span>"&gt;
+
+                &lt;!-- Before closing body tag --&gt;
+                &lt;script src="<span
+                    class="highlight">https://localhost:42413/static/js/vto-widget.js</span>"&gt;&lt;/script&gt;
+            </div>
+
+            <h3>2. Add the Try Now Button</h3>
+            <div class="code-snippet">
+                &lt;button class="<span class="highlight">vto-try-now-btn</span>"
+                data-category="<span class="highlight">lipstick</span>"
+                data-color="<span class="highlight">#e91e63</span>"
+                data-color-name="<span class="highlight">Rose Pink</span>"
+                data-product-name="<span class="highlight">Your Product Name</span>"
+                data-api-key="<span class="highlight">OptimosightGuest999</span>"
+                data-mode="<span class="highlight">both</span>"
+                data-colors="<span class="highlight">#dc2626,#e91e63,#7c2d12,#991b1b</span>"
+                data-color-names="<span class="highlight">Ruby Red,Rose Pink,Chocolate,Deep Red</span>"&gt;
+                ✨ Try Now
+                &lt;/button&gt;
+            </div>
+
+            <h3>3. Dynamic Color Selection (JavaScript)</h3>
+            <div class="code-snippet">
+                // Update button when color changes
+                function updateTryOnColor(button, color, colorName) {
+                button.setAttribute('data-color', color);
+                button.setAttribute('data-color-name', colorName);
+                }
+            </div>
+
+            <p><strong>That's it!</strong> The widget will automatically:</p>
+            <ul style="margin: 16px 0; padding-left: 20px;">
+                <li>Open in a responsive modal</li>
+                <li>Support both live camera and photo upload</li>
+                <li>Handle mobile and desktop experiences</li>
+                <li>Integrate with your existing API endpoints</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- VTO Widget Script -->
+    <script src="/static/js/vto-widget.js"></script>
+
+    <script>
+        // Demo functionality for color selection
+        document.addEventListener('DOMContentLoaded', function () {
+            // Handle color swatch selection
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.addEventListener('click', function () {
+                    const container = this.closest('.product-info');
+                    const swatches = container.querySelectorAll('.color-swatch');
+                    const tryButton = container.querySelector('.vto-try-now-btn');
+
+                    // Remove active class from all swatches in this product
+                    swatches.forEach(s => s.classList.remove('active'));
+
+                    // Add active class to clicked swatch
+                    this.classList.add('active');
+
+                    // Update try button with selected color
+                    const color = this.dataset.color;
+                    const colorName = this.dataset.name;
+
+                    if (tryButton) {
+                        tryButton.setAttribute('data-color', color);
+                        tryButton.setAttribute('data-color-name', colorName);
+
+                        // Keep the original colors and names intact - only update the selected color
+                        // The data-colors and data-color-names should remain the full list
+                    }
+                });
+            });
+        });
+
+        // Demo add to cart functionality
+        function addToCart(productType) {
+            // Simulate add to cart
+            const button = event.target;
+            const originalText = button.textContent;
+
+            button.textContent = 'Added! ✓';
+            button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.style.background = 'linear-gradient(135deg, #059669, #047857)';
+            }, 2000);
+        }
+
+        // Analytics tracking (optional)
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('vto-try-now-btn')) {
+                // Track VTO usage
+                console.log('VTO Try Now clicked:', {
+                    category: e.target.dataset.category,
+                    product: e.target.dataset.productName,
+                    color: e.target.dataset.colorName
+                });
+
+                // You can send this to your analytics service
+                // analytics.track('vto_try_now_clicked', {...});
+            }
+        });
+    </script>
+</body>
+
+</html>
