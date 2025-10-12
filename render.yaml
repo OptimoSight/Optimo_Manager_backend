@@ -4,3 +4,8 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://user:password@external-host:port/service_manager
+
+        
