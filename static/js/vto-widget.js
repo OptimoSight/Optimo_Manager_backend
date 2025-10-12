@@ -6,7 +6,10 @@
     const possibleUrls = [
         'https://192.168.50.148:42413',
         'https://192.168.0.111:42413',
-        'https://localhost:42413'
+        'https://localhost:42413',
+        'https://optimosight.github.io/',
+        'https://optimo-manager-backend.onrender.com/'
+
     ];
 
     // Dynamic base URL detection with reachability check
@@ -290,6 +293,7 @@
                 'https://192.168.0.111:42414',
                 'https://localhost:42414',
                 'https://optimosight.github.io',
+                'https://optimo-manager-backend.onrender.com/',
                 CONFIG.baseUrl,
                 window.location.origin
             ];
@@ -298,7 +302,9 @@
             const isAllowedOrigin = allowedOrigins.some(origin => 
                 event.origin === origin || 
                 event.origin.includes('192.168.0.111') || 
-                event.origin.includes('192.168.50.148') || 
+                event.origin.includes('192.168.50.148') ||
+                event.origin.includes('https://optimosight.github.io/') ||
+                event.origin.includes('https://optimo-manager-backend.onrender.com/') ||
                 event.origin.includes('localhost')
             );
             
