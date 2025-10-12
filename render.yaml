@@ -6,6 +6,11 @@ services:
     dockerContext: .
     envVars:
       - key: DATABASE_URL
-        value: postgresql://user:password@external-host:port/service_manager
+        fromDatabase:
+          name: optimo-manager-db
+          property: connectionString  # Uses Internal Database URL
 
-        
+databases:
+  - name: optimo-manager-db
+    databaseName: service_manager
+    user: service_manager_user
