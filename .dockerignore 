@@ -1,0 +1,50 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.py[cod]
+*$py.class
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+
+# Local certificates (not needed in production)
+*.pem
+*.key
+localhost+*
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+readMe.md
+
+# Node modules (if any)
+node_modules/
+package-lock.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local dev scripts
+run_https.py
+refresh_db.py
+
+# Build files
+*.egg-info/
+dist/
+build/
