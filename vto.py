@@ -21,7 +21,8 @@ from constants import VTO_ENDPOINTS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-VTO_SERVICE_URL = "http://localhost:8001"
+# VTO_SERVICE_URL = "http://localhost:8001"
+VTO_SERVICE_URL = "https://vto.onrender.com"
 router = APIRouter(prefix="/api/vto", tags=["VTO"])
 
 # --- Define Static API Keys ---
