@@ -2,15 +2,12 @@
 (function () {
     'use strict';
 
-    // List of possible URLs for dynamic selection
-    const possibleUrls = [
-        'https://192.168.50.148:42413',
-        'https://192.168.0.111:42413',
-        'https://localhost:42413',
-        'https://optimosight.github.io/',
-        'https://optimo-manager-backend.onrender.com/'
-
-    ];
+    // // List of possible URLs for dynamic selection
+    // const possibleUrls = [
+    //     'https://192.168.50.148:42413',
+    //     'https://192.168.0.111:42413',
+    //     'https://localhost:42413'
+    // ];
 
     // Dynamic base URL detection with reachability check
     async function getBaseUrl() {
@@ -27,6 +24,7 @@
             "https://192.168.50.148:42413",
             "https://192.168.0.111:42413",
             "https://localhost:42413",
+            "https://optimosight.github.io",
             "https://optimo-manager-backend.onrender.com"
         ];
 
@@ -298,7 +296,7 @@
                 'https://192.168.0.111:42414',
                 'https://localhost:42414',
                 'https://optimosight.github.io',
-                'https://optimo-manager-backend.onrender.com/',
+                'https://optimo-manager-backend.onrender.com',
                 CONFIG.baseUrl,
                 window.location.origin
             ];
@@ -308,8 +306,8 @@
                 event.origin === origin ||
                 event.origin.includes('192.168.0.111') ||
                 event.origin.includes('192.168.50.148') ||
-                event.origin.includes('https://optimosight.github.io/') ||
-                event.origin.includes('https://optimo-manager-backend.onrender.com/') ||
+                event.origin.includes('optimosight.github.io') ||
+                event.origin.includes('optimo-manager-backend.onrender.com') ||
                 event.origin.includes('localhost')
             );
 
