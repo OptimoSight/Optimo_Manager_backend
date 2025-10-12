@@ -1,5 +1,5 @@
 // Virtual Try-On Widget JavaScript with Smart Network Detection
-(function() {
+(function () {
     'use strict';
 
     // List of possible URLs for dynamic selection
@@ -14,43 +14,48 @@
 
     // Dynamic base URL detection with reachability check
     async function getBaseUrl() {
+        const hostname = window.location.hostname;
+
+        // ✅ Force production base URL when running on GitHub Pages
+        if (hostname.includes("github.io")) {
+            console.log("Running on GitHub Pages – forcing backend base URL");
+            return "https://optimo-manager-backend.onrender.com";
+        }
+
+        // ✅ Local network detection and reachability test
+        const possibleUrls = [
+            "https://192.168.50.148:42413",
+            "https://192.168.0.111:42413",
+            "https://localhost:42413",
+            "https://optimo-manager-backend.onrender.com"
+        ];
+
         const timeout = 2000; // 2 seconds timeout per request
 
-        // Function to test if a URL is reachable
         async function testUrl(url) {
             try {
-                console.log(`Testing reachability for ${url}`);
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), timeout);
                 const response = await fetch(`${url}/api/vto/upload`, {
-                    method: 'HEAD',
+                    method: "HEAD",
                     signal: controller.signal,
-                    headers: { 'X-API-Key': 'OptimosightGuest999' }
+                    headers: { "X-API-Key": "OptimosightGuest999" }
                 });
                 clearTimeout(timeoutId);
-                if (response.ok) {
-                    console.log(`${url} is reachable`);
-                    return true;
-                }
-                console.warn(`${url} responded with status ${response.status}`);
-                return false;
-            } catch (error) {
-                console.warn(`${url} is not reachable:`, error.message);
+                return response.ok;
+            } catch {
                 return false;
             }
         }
 
-        // Test each URL in sequence
         for (const url of possibleUrls) {
-            if (await testUrl(url)) {
-                return url;
-            }
+            if (await testUrl(url)) return url;
         }
 
-        // Fallback to the first URL if none are reachable
-        console.error('No URLs were reachable, falling back to:', possibleUrls[0]);
+        console.error("No URLs were reachable, falling back to:", possibleUrls[0]);
         return possibleUrls[0];
     }
+
 
     // Configuration
     let CONFIG = {
@@ -80,7 +85,7 @@
             try {
                 console.log('Starting image processing via API...');
                 console.log('API Base URL:', CONFIG.baseUrl);
-                
+
                 const formData = new FormData();
                 formData.append('image', file);
                 formData.append('org_id', orgId);
@@ -115,7 +120,7 @@
 
                 let response;
                 let lastError;
-                
+
                 for (const method of authMethods) {
                     try {
                         console.log(`Trying authentication method: ${method.name}`);
@@ -142,7 +147,7 @@
                     formDataWithKey.append('org_id', orgId);
                     formDataWithKey.append('category', category);
                     formDataWithKey.append('api_key', 'OptimosightGuest999');
-                    
+
                     response = await fetch(`${CONFIG.baseUrl}/api/vto/upload`, {
                         method: 'POST',
                         body: formDataWithKey
@@ -162,10 +167,10 @@
                 }
 
                 const result = await response.json();
-                
+
                 // Handle different response formats
                 const processedImage = result.processed_image || result.image || result.data;
-                
+
                 if (!processedImage) {
                     console.log('API Response:', result);
                     throw new Error('No processed image found in API response');
@@ -178,7 +183,7 @@
                 }
 
                 console.log('Image processed successfully via API');
-                
+
                 return {
                     processed: formattedImage,
                     crop: result.crop_region || { x: 0, y: 0, w: 0, h: 0 }
@@ -194,19 +199,19 @@
             const base64WithoutPrefix = base64Data.split(',')[1] || base64Data;
             const byteCharacters = atob(base64WithoutPrefix);
             const byteArrays = [];
-            
+
             for (let offset = 0; offset < byteCharacters.length; offset += 512) {
                 const slice = byteCharacters.slice(offset, offset + 512);
                 const byteNumbers = new Array(slice.length);
-                
+
                 for (let i = 0; i < slice.length; i++) {
                     byteNumbers[i] = slice.charCodeAt(i);
                 }
-                
+
                 const byteArray = new Uint8Array(byteNumbers);
                 byteArrays.push(byteArray);
             }
-            
+
             return new Blob(byteArrays, { type: 'image/jpeg' });
         }
     }
@@ -297,17 +302,17 @@
                 CONFIG.baseUrl,
                 window.location.origin
             ];
-            
+
             // More lenient origin check for development
-            const isAllowedOrigin = allowedOrigins.some(origin => 
-                event.origin === origin || 
-                event.origin.includes('192.168.0.111') || 
+            const isAllowedOrigin = allowedOrigins.some(origin =>
+                event.origin === origin ||
+                event.origin.includes('192.168.0.111') ||
                 event.origin.includes('192.168.50.148') ||
                 event.origin.includes('https://optimosight.github.io/') ||
                 event.origin.includes('https://optimo-manager-backend.onrender.com/') ||
                 event.origin.includes('localhost')
             );
-            
+
             if (!isAllowedOrigin) {
                 console.warn('Rejected message from unauthorized origin:', event.origin);
                 return;
@@ -328,29 +333,29 @@
         async handleFileUpload(data) {
             try {
                 console.log('Handling file upload from iframe');
-                
+
                 // Convert base64 to File object
                 const response = await fetch(data.fileData);
                 const blob = await response.blob();
-                const file = new File([blob], data.fileName || 'upload.jpg', { 
-                    type: data.fileType || 'image/jpeg' 
+                const file = new File([blob], data.fileName || 'upload.jpg', {
+                    type: data.fileType || 'image/jpeg'
                 });
-                
+
                 // Process the image
                 const processed = await this.imageProcessor.processImage(
-                    file, 
+                    file,
                     data.category || 'lipstick'
                 );
-                
+
                 // Send processed image back to iframe
                 this.iframe.contentWindow.postMessage({
                     action: 'imageProcessed',
                     data: processed.processed,
                     crop: processed.crop
                 }, '*'); // Use wildcard for development
-                
+
                 console.log('Image processed and sent back to iframe');
-                
+
             } catch (error) {
                 console.error('File upload error:', error);
                 this.iframe.contentWindow.postMessage({
@@ -363,24 +368,24 @@
         async handleImageProcessing(fileData, category = 'lipstick') {
             try {
                 this.showLoadingMessage('Processing image via API...');
-                
+
                 // Convert base64 to blob
                 const response = await fetch(fileData);
                 const blob = await response.blob();
                 const file = new File([blob], 'upload.jpg', { type: 'image/jpeg' });
-                
+
                 // Process image via API
                 const processed = await this.imageProcessor.processImage(file, category);
-                
+
                 // Send processed image back to iframe - use wildcard origin for development
                 this.iframe.contentWindow.postMessage({
                     action: 'imageProcessed',
                     data: processed.processed,
                     crop: processed.crop
                 }, '*'); // Changed from CONFIG.baseUrl to '*'
-                
+
                 console.log('Image processed and sent to iframe');
-                
+
             } catch (error) {
                 console.error('Image processing error:', error);
                 this.iframe.contentWindow.postMessage({
@@ -486,7 +491,7 @@
         onIframeLoad() {
             console.log('Iframe loaded successfully');
             this.iframeLoaded = true;
-            
+
             if (this.loading && this.iframe) {
                 this.loading.style.display = 'none';
                 this.iframe.style.display = 'block';
@@ -502,7 +507,7 @@
             if (this.currentRetry < CONFIG.retryAttempts && this.currentConfig) {
                 this.currentRetry++;
                 console.log(`Retrying iframe load (${this.currentRetry}/${CONFIG.retryAttempts})`);
-                
+
                 if (this.loading) {
                     const loadingText = this.loading.querySelector('div:last-child');
                     if (loadingText) {
@@ -627,7 +632,7 @@
             mutations.forEach((mutation) => {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1) {
-                        if (node.classList?.contains('vto-try-now-btn') || 
+                        if (node.classList?.contains('vto-try-now-btn') ||
                             node.querySelector?.('.vto-try-now-btn')) {
                             shouldRefresh = true;
                         }
@@ -655,8 +660,8 @@
 })();
 
 if (typeof jQuery !== 'undefined') {
-    jQuery.fn.vtoWidget = function(options = {}) {
-        return this.each(function() {
+    jQuery.fn.vtoWidget = function (options = {}) {
+        return this.each(function () {
             const $this = jQuery(this);
             if (options.category) $this.attr('data-category', options.category);
             if (options.color) $this.attr('data-color', options.color);
