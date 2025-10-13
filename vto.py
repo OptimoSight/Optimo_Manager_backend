@@ -17,12 +17,27 @@ from models import (
 )
 import os
 from constants import VTO_ENDPOINTS
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 VTO_SERVICE_URL = "http://localhost:8001"
 # VTO_SERVICE_URL = "https://vto.onrender.com"
+
+load_dotenv()
+
+# Auto-detect environment and set VTO service URL
+if os.getenv("ENVIRONMENT") == "production" or os.getenv("RENDER"):
+    # Production environment (Render.com, etc.)
+    VTO_SERVICE_URL = "https://vto.onrender.com"
+    print("🚀 Using PRODUCTION VTO service:", VTO_SERVICE_URL)
+else:
+    # Development/Local environment
+    VTO_SERVICE_URL = "http://localhost:8001"
+    print("🔧 Using LOCAL VTO service:", VTO_SERVICE_URL)
+
+
 router = APIRouter(prefix="/api/vto", tags=["VTO"])
 
 # --- Define Static API Keys ---
