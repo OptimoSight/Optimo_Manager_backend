@@ -22,8 +22,8 @@ from dotenv import load_dotenv
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-VTO_SERVICE_URL = "http://localhost:8001"
-# VTO_SERVICE_URL = "https://vto.onrender.com"
+# VTO_SERVICE_URL = "http://localhost:8001"
+# # VTO_SERVICE_URL = "https://vto.onrender.com"
 
 load_dotenv()
 
