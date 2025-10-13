@@ -433,14 +433,14 @@ async def vto_interface(
         }}
 
         // Process image with multiple auth attempts
-        async function processImageDirectly(file) {{
+                async function processImageDirectly(file) {{
             try {{
                 console.log('Processing image directly via API...');
                 console.log('Using API Key:', API_KEY);
                 
                 // Try multiple authentication methods
                 const authMethods = [
-                    // Method 1: Query parameter
+                    // Method 1: Query parameter (primary - should work if authenticated)
                     {{
                         name: 'Query parameter',
                         getFormData: () => {{
@@ -452,7 +452,7 @@ async def vto_interface(
                         }},
                         url: `/api/vto/upload?api_key=${{encodeURIComponent(API_KEY)}}`
                     }},
-                    // Method 2: X-API-Key header
+                    // Method 2: X-API-Key header (secondary - should work if authenticated)
                     {{
                         name: 'X-API-Key header',
                         getFormData: () => {{
@@ -465,7 +465,7 @@ async def vto_interface(
                         url: '/api/vto/upload',
                         headers: {{ 'X-API-Key': API_KEY }}
                     }},
-                    // Method 3: Bearer token
+                    // Method 3: Bearer token (fallback - may not be supported)
                     {{
                         name: 'Bearer token',
                         getFormData: () => {{
@@ -478,7 +478,7 @@ async def vto_interface(
                         url: '/api/vto/upload',
                         headers: {{ 'Authorization': `Bearer ${{API_KEY}}` }}
                     }},
-                    // Method 4: API key in form data
+                    // Method 4: API key in form data (fallback - may not be supported)
                     {{
                         name: 'Form data',
                         getFormData: () => {{
@@ -495,6 +495,9 @@ async def vto_interface(
 
                 let response;
                 let lastError;
+                let lastStatusCode;
+                let serviceUnavailableError = null;
+                let authenticationError = null;
 
                 for (const method of authMethods) {{
                     try {{
@@ -510,6 +513,7 @@ async def vto_interface(
                         }}
 
                         response = await fetch(method.url, options);
+                        lastStatusCode = response.status;
                         
                         console.log(`Method ${{method.name}} response status:`, response.status);
                         
@@ -522,15 +526,96 @@ async def vto_interface(
                         lastError = `${{method.name}}: HTTP ${{response.status}} - ${{errorText}}`;
                         console.warn(lastError);
                         
+                        // Check if this is a service unavailable error (503)
+                        if (response.status === 503) {{
+                            let errorDetail = 'Service temporarily unavailable';
+                            try {{
+                                const errorData = JSON.parse(errorText);
+                                if (errorData.detail) {{
+                                    errorDetail = errorData.detail;
+                                }}
+                            }} catch (e) {{
+                                // If we can't parse JSON, use the text as is
+                                if (errorText.includes('not reachable') || errorText.includes('unavailable')) {{
+                                    errorDetail = errorText;
+                                }}
+                            }}
+                            serviceUnavailableError = new Error(errorDetail);
+                        }}
+                        
+                        // Check if this is a REAL authentication error (401/403 on primary methods)
+                        if ((response.status === 401 || response.status === 403) && 
+                            (method.name === 'Query parameter' || method.name === 'X-API-Key header')) {{
+                            let authErrorDetail = 'Authentication failed';
+                            try {{
+                                const errorData = JSON.parse(errorText);
+                                if (errorData.detail) {{
+                                    authErrorDetail = errorData.detail;
+                                }}
+                            }} catch (e) {{
+                                authErrorDetail = errorText || 'Invalid API key or credentials';
+                            }}
+                            authenticationError = new Error(authErrorDetail);
+                        }}
+                        
                     }} catch (err) {{
                         lastError = `${{method.name}}: ${{err.message}}`;
                         console.warn(lastError);
+                        
+                        // Check for network errors that indicate service issues
+                        if (err.message.includes('Failed to fetch') || 
+                            err.message.includes('NetworkError') ||
+                            err.message.includes('ECONNREFUSED')) {{
+                            serviceUnavailableError = new Error('Unable to connect to the server. Please check your internet connection and try again.');
+                        }}
                         continue;
                     }}
                 }}
 
-                if (!response || !response.ok) {{
-                    throw new Error(`All authentication methods failed. Last error: ${{lastError}}`);
+                if (!response) {{
+                    throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+                }}
+
+                if (!response.ok) {{
+                    // Priority 1: If we encountered service unavailable errors during any attempt
+                    if (serviceUnavailableError) {{
+                        throw serviceUnavailableError;
+                    }}
+                    
+                    // Priority 2: If we have a REAL authentication error from primary methods
+                    if (authenticationError) {{
+                        throw authenticationError;
+                    }}
+                    
+                    // Priority 3: Check the final status code for other errors
+                    if (lastStatusCode === 401 || lastStatusCode === 403) {{
+                        // This might be from fallback methods, but if all methods failed with auth errors, it's likely real
+                        let authErrorDetail = 'Authentication failed';
+                        try {{
+                            const errorData = await response.json();
+                            if (errorData.detail) {{
+                                authErrorDetail = errorData.detail;
+                            }}
+                        }} catch (e) {{
+                            authErrorDetail = await response.text() || 'Invalid API key or credentials';
+                        }}
+                        throw new Error(authErrorDetail);
+                    }} else if (lastStatusCode === 500 || lastStatusCode === 503) {{
+                        let errorDetail = 'Service temporarily unavailable';
+                        try {{
+                            const errorData = await response.json();
+                            if (errorData.detail) {{
+                                errorDetail = errorData.detail;
+                            }}
+                        }} catch (e) {{
+                            errorDetail = await response.text() || 'Internal server error';
+                        }}
+                        throw new Error(errorDetail);
+                    }} else if (lastStatusCode === 429) {{
+                        throw new Error('Usage limit reached. Please try again later or upgrade your subscription.');
+                    }} else {{
+                        throw new Error(`Request failed with status ${{lastStatusCode}}. Please try again.`);
+                    }}
                 }}
 
                 const result = await response.json();
@@ -567,7 +652,27 @@ async def vto_interface(
                 
             }} catch (error) {{
                 console.error('❌ Direct processing error:', error);
-                alert('Failed to process image: ' + error.message);
+                
+                // Provide more user-friendly error messages
+                let userMessage = error.message;
+                
+                if (error.message.includes('Virtual try-on service is not reachable') ||
+                    error.message.includes('Service temporarily unavailable') ||
+                    error.message.includes('not reachable') ||
+                    error.message.includes('connection') ||
+                    error.message.includes('unavailable')) {{
+                    userMessage = 'Our virtual try-on service is temporarily unavailable. Please try again in a few minutes.';
+                }} else if (error.message.includes('Authentication failed') ||
+                           error.message.includes('Invalid API key') ||
+                           error.message.includes('API key required')) {{
+                    userMessage = 'Authentication failed. Please check your API key and try again.';
+                }} else if (error.message.includes('Failed to fetch') ||
+                           error.message.includes('NetworkError') ||
+                           error.message.includes('Unable to connect')) {{
+                    userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+                }}
+                
+                alert('Failed to process image: ' + userMessage);
             }}
         }}
 

@@ -21,8 +21,8 @@ from constants import VTO_ENDPOINTS
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# VTO_SERVICE_URL = "http://localhost:8001"
-VTO_SERVICE_URL = "https://vto.onrender.com"
+VTO_SERVICE_URL = "http://localhost:8001"
+# VTO_SERVICE_URL = "https://vto.onrender.com"
 router = APIRouter(prefix="/api/vto", tags=["VTO"])
 
 # --- Define Static API Keys ---
@@ -504,38 +504,62 @@ async def vto_upload(
     )
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:  # Added timeout
             content = await image.read()
             files = {"file": (image.filename, content, image.content_type)}
 
-            response = await client.post(
-                f"{VTO_SERVICE_URL}/api/v1/makeup/upload_image",
-                files=files,
-                data={"crop_face": "true"},
-            )
+            try:
+                response = await client.post(
+                    f"{VTO_SERVICE_URL}/api/v1/makeup/upload_image",
+                    files=files,
+                    data={"crop_face": "true"},
+                )
+            except httpx.ConnectError:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Virtual try-on service is not reachable. Please try again later."
+                )
+            except httpx.TimeoutException:
+                raise HTTPException(
+                    status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                    detail="Virtual try-on service timeout. Please try again."
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Connection to virtual try-on service failed: {str(e)}"
+                )
 
             if response.status_code != status.HTTP_200_OK:
-                raise HTTPException(status_code=response.status_code, detail=response.text)
+                raise HTTPException(
+                    status_code=response.status_code, 
+                    detail=f"Virtual try-on service error: {response.text}"
+                )
 
             vto_response = response.json()
             
             # Extract the base64 image from the VTO service response
-            # You need to identify which field contains the base64 image
             processed_image = vto_response.get("image") or vto_response.get("processed_image") or vto_response.get("data")
             
             if not processed_image:
-                # If you're not sure which field contains the image, log the response structure
                 print("VTO Service Response:", vto_response)
-                raise HTTPException(status_code=500, detail="Could not find processed image in response")
+                raise HTTPException(
+                    status_code=500, 
+                    detail="Could not find processed image in virtual try-on service response"
+                )
             
-            # Return the expected structure
             return {
                 "processed_image": processed_image,
-                # "crop_region": vto_response.get("crop_region", {"x": 0, "y": 0, "w": 0, "h": 0})
             }
 
+    except HTTPException:
+        # Re-raise HTTP exceptions to preserve status codes
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Image processing failed: {str(e)}"
+        )
 
 
 @router.post("/apply_{category}")
