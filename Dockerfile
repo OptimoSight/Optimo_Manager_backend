@@ -10,4 +10,11 @@ COPY . .
 
 EXPOSE $PORT
 
-CMD /bin/sh -c "uvicorn main:app --host 0.0.0.0 --port $PORT"
+# Conditional seed logic — run seeder only if RUN_SEED=true
+CMD /bin/sh -c "if [ \"$RUN_SEED\" = \"true\" ]; then \
+                    echo '🔄 Running database seed...'; \
+                    python refresh_db.py; \
+                else \
+                    echo '➡️ Skipping seed...'; \
+                fi && \
+                uvicorn main:app --host 0.0.0.0 --port $PORT"
