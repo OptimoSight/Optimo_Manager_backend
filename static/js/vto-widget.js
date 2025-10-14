@@ -239,7 +239,6 @@
             const modalHTML = `
                 <div id="vtoModal" class="vto-modal">
                     <div class="vto-modal-content">
-                        <span class="vto-close" onclick="VTOWidget.close()">&times;</span>
                         <div class="vto-loading" id="vtoLoading">
                             <div class="vto-spinner"></div>
                             <div>Loading Virtual Try-On...</div>

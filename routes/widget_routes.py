@@ -1,4 +1,4 @@
-# widget_routes.py - Fixed with multiple auth attempts
+# widget_routes.py - With fixed product overlay
 
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
@@ -22,7 +22,9 @@ async def vto_interface(
     color_name: str = Query("Default"),
     mode: str = Query("both"),
     colors: str = Query(None),
-    color_names: str = Query(None)
+    color_names: str = Query(None),
+    product_url: str = Query("https://example.com/product"),  # Default product URL
+    product_id: str = Query("default-product")
 ):
     """Serve the main VTO interface with upload/camera options"""
     
@@ -53,7 +55,7 @@ async def vto_interface(
             margin: 0;
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #6d28d9;
+            background: #41414161;
             min-height: 100vh;
             color: #1f2937;
         }}
@@ -191,7 +193,7 @@ async def vto_interface(
         }}
         .vto-toggle-btn {{
             flex: 1;
-            background: #1f2937;
+            background: #5c165d;
             color: white;
             border: none;
             padding: 12px 20px;
@@ -207,9 +209,238 @@ async def vto_interface(
         .hidden {{
             display: none;
         }}
+        
+        /* Loader Styles */
+        .upload-loader {{
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            color: white;
+        }}
+        .upload-loader.active {{
+            display: flex;
+        }}
+        .loader-spinner {{
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }}
+        .loader-text {{
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }}
+        .loader-subtext {{
+            font-size: 14px;
+            opacity: 0.8;
+            text-align: center;
+            max-width: 300px;
+        }}
+        @keyframes spin {{
+            0% {{ transform: rotate(0deg); }}
+            100% {{ transform: rotate(360deg); }}
+        }}
+        
+        /* Upload Button with Loading State */
+        .upload-button {{
+            position: relative;
+            overflow: hidden;
+        }}
+        .upload-button:disabled {{
+            opacity: 0.7;
+            cursor: not-allowed;
+        }}
+        .upload-button-loading {{
+            background: #9ca3af !important;
+        }}
+        .button-loading-spinner {{
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }}
+        .upload-button.loading .button-text {{
+            display: none;
+        }}
+        .upload-button.loading .button-loading-spinner {{
+            display: inline-block;
+        }}
+        
+        /* Fixed Product Overlay Styles */
+                /* Fixed Product Overlay Styles */
+        .product-overlay {{
+            position: absolute;
+            bottom: 2px;
+            left: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            border-radius: 8px;
+            padding: 8px 12px; /* Reduced vertical padding */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            z-index: 20;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: 55px;
+            display: flex;
+            align-items: center;
+        }}
+
+        .product-overlay.visible {{
+            transform: translateY(0);
+            opacity: 1;
+        }}
+
+        .product-info {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            min-height: 39px; /* Ensure minimum height */
+        }}
+
+        .product-details {{
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }}
+
+        .product-name {{
+            font-size: 13px; /* Slightly smaller */
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1px; /* Reduced margin */
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+
+        .product-color {{
+            font-size: 11px; /* Slightly smaller */
+            color: #d1d5db;
+            margin-bottom: 2px; /* Reduced margin */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+
+        .product-price {{
+            font-size: 13px; /* Slightly smaller */
+            font-weight: 700;
+            color: #10b981;
+            line-height: 1.2;
+        }}
+
+        .product-actions {{
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-shrink: 0;
+        }}
+
+        .view-product-btn {{
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: none;
+            padding: 6px 10px; /* Reduced padding */
+            border-radius: 6px;
+            font-size: 11px; /* Smaller font */
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px; /* Reduced gap */
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            height: 32px; /* Fixed height */
+        }}
+
+        .view-product-btn:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }}
+
+        .wishlist-btn {{
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 32px; /* Smaller */
+            height: 32px; /* Smaller */
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }}
+
+        .wishlist-btn:hover {{
+            border-color: #f43f5e;
+            background: rgba(244, 63, 94, 0.1);
+            transform: scale(1.05);
+        }}
+
+        .wishlist-btn.active {{
+            background: #f43f5e;
+            border-color: #f43f5e;
+        }}
+
+        .wishlist-btn.active svg {{
+            color: white;
+        }}
+
+        .wishlist-btn svg {{
+            color: #d1d5db;
+            transition: all 0.3s ease;
+            width: 14px; /* Smaller icon */
+            height: 14px; /* Smaller icon */
+        }}
+
+        .wishlist-btn.active svg {{
+            color: white;
+        }}
+
+        .wishlist-btn:hover svg {{
+            color: #f43f5e;
+        }}
+        
+        /* Make sure overlay doesn't block image */
+        .image-comparison-container {{
+            padding-bottom: 0;
+        }}
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
+    <!-- Upload Loader Overlay -->
+    <div id="uploadLoader" class="upload-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Processing Your Photo</div>
+        <div class="loader-subtext">This may take a few seconds. Please don't close the window.</div>
+    </div>
+
     <div id="initial-view" class="vto-popup">
         <div class="text-center mb-6">
             <h2 class="text-sm font-bold uppercase text-gray-800">Professional Makeup</h2>
@@ -246,7 +477,10 @@ async def vto_interface(
                 <p>Make sure that the lighting is not too dim or overexposed.</p>
             </div>
         </div>
-        <button class="w-full py-3 bg-white text-gray-900 font-semibold rounded mt-8" onclick="triggerUpload()">UPLOAD PHOTO</button>
+        <button id="uploadPhotoBtn" class="w-full py-3 bg-white text-gray-900 font-semibold rounded mt-8 upload-button" onclick="triggerUpload()">
+            <span class="button-loading-spinner"></span>
+            <span class="button-text">UPLOAD PHOTO</span>
+        </button>
         <input type="file" id="photoUpload" accept="image/*" class="hidden" onchange="handleUpload(event)">
     </div>
 
@@ -260,6 +494,26 @@ async def vto_interface(
                 <img id="afterImage" src="" alt="After" class="comparison-image after-image">
                 <div class="slider-line" id="sliderLine">
                     <div class="slider-handle"></div>
+                </div>
+                
+                <!-- Fixed Product Overlay -->
+                <div id="productOverlay" class="product-overlay">
+                    <div class="product-info">
+                        <div class="product-details">
+                            <div class="product-name">{product_name}</div>
+                            <div class="product-color">Color: {color_name}</div>
+                            <div class="product-price">$29.99</div>
+                        </div>
+                        <div class="product-actions">
+                            <a href="{product_url}" target="_blank" class="view-product-btn" id="viewProductBtn">
+                                <i data-lucide="shopping-bag"></i>
+                                View
+                            </a>
+                            <button class="wishlist-btn" id="wishlistBtn" onclick="toggleWishlist()">
+                                <i data-lucide="heart"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -280,6 +534,8 @@ async def vto_interface(
 
         const API_KEY = '{api_key}';
         const CATEGORY = '{category}';
+        const PRODUCT_ID = '{product_id}';
+        let isWishlisted = false;
 
         if ('{mode}' !== 'both') {{
             if ('{mode}' === 'live') {{
@@ -300,6 +556,11 @@ async def vto_interface(
 
         window.addEventListener('load', function() {{
             initializeSlider();
+            // Load wishlist status from localStorage
+            const savedWishlist = localStorage.getItem(`wishlist_${{PRODUCT_ID}}`);
+            if (savedWishlist === 'true') {{
+                toggleWishlist(true);
+            }}
         }});
 
         function initializeSlider() {{
@@ -364,6 +625,9 @@ async def vto_interface(
             afterImage.style.display = 'none';
             document.getElementById('sliderLine').classList.remove('active');
             
+            // Hide product overlay in before view
+            document.getElementById('productOverlay').classList.remove('visible');
+            
             currentView = 'before';
         }}
 
@@ -380,6 +644,13 @@ async def vto_interface(
             document.getElementById('sliderLine').classList.add('active');
             updateSliderPosition();
             
+            // Show product overlay in comparison view
+            if (afterImageData) {{
+                setTimeout(() => {{
+                    document.getElementById('productOverlay').classList.add('visible');
+                }}, 300);
+            }}
+            
             currentView = 'comparison';
         }}
 
@@ -394,6 +665,13 @@ async def vto_interface(
             afterImage.style.display = 'block';
             afterImage.style.clipPath = 'inset(0 0% 0 0)';
             document.getElementById('sliderLine').classList.remove('active');
+            
+            // Show product overlay in after view
+            if (afterImageData) {{
+                setTimeout(() => {{
+                    document.getElementById('productOverlay').classList.add('visible');
+                }}, 300);
+            }}
             
             currentView = 'after';
         }}
@@ -411,11 +689,30 @@ async def vto_interface(
             uploadedImageData = null;
             afterImageData = null;
             document.getElementById('toggleButtons').classList.add('hidden');
+            document.getElementById('productOverlay').classList.remove('visible');
             currentView = 'before';
         }}
 
         function triggerUpload() {{
             document.getElementById('photoUpload').click();
+        }}
+
+        function showUploadLoader() {{
+            const loader = document.getElementById('uploadLoader');
+            const uploadBtn = document.getElementById('uploadPhotoBtn');
+            
+            loader.classList.add('active');
+            uploadBtn.classList.add('loading', 'upload-button-loading');
+            uploadBtn.disabled = true;
+        }}
+
+        function hideUploadLoader() {{
+            const loader = document.getElementById('uploadLoader');
+            const uploadBtn = document.getElementById('uploadPhotoBtn');
+            
+            loader.classList.remove('active');
+            uploadBtn.classList.remove('loading', 'upload-button-loading');
+            uploadBtn.disabled = false;
         }}
 
         async function handleUpload(event) {{
@@ -424,23 +721,29 @@ async def vto_interface(
             
             console.log('File selected:', file.name, file.type, file.size);
             
+            // Show loader immediately
+            showUploadLoader();
+            
             try {{
                 await processImageDirectly(file);
             }} catch (error) {{
                 console.error('Upload error:', error);
                 alert('Failed to process image. Please try again.');
+            }} finally {{
+                // Always hide loader when done (success or error)
+                hideUploadLoader();
             }}
         }}
 
         // Process image with multiple auth attempts
-                async function processImageDirectly(file) {{
+        async function processImageDirectly(file) {{
             try {{
                 console.log('Processing image directly via API...');
                 console.log('Using API Key:', API_KEY);
                 
                 // Try multiple authentication methods
                 const authMethods = [
-                    // Method 1: Query parameter (primary - should work if authenticated)
+                    // Method 1: Query parameter
                     {{
                         name: 'Query parameter',
                         getFormData: () => {{
@@ -452,7 +755,7 @@ async def vto_interface(
                         }},
                         url: `/api/vto/upload?api_key=${{encodeURIComponent(API_KEY)}}`
                     }},
-                    // Method 2: X-API-Key header (secondary - should work if authenticated)
+                    // Method 2: X-API-Key header
                     {{
                         name: 'X-API-Key header',
                         getFormData: () => {{
@@ -465,7 +768,7 @@ async def vto_interface(
                         url: '/api/vto/upload',
                         headers: {{ 'X-API-Key': API_KEY }}
                     }},
-                    // Method 3: Bearer token (fallback - may not be supported)
+                    // Method 3: Bearer token
                     {{
                         name: 'Bearer token',
                         getFormData: () => {{
@@ -478,7 +781,7 @@ async def vto_interface(
                         url: '/api/vto/upload',
                         headers: {{ 'Authorization': `Bearer ${{API_KEY}}` }}
                     }},
-                    // Method 4: API key in form data (fallback - may not be supported)
+                    // Method 4: API key in form data
                     {{
                         name: 'Form data',
                         getFormData: () => {{
@@ -495,9 +798,6 @@ async def vto_interface(
 
                 let response;
                 let lastError;
-                let lastStatusCode;
-                let serviceUnavailableError = null;
-                let authenticationError = null;
 
                 for (const method of authMethods) {{
                     try {{
@@ -513,7 +813,6 @@ async def vto_interface(
                         }}
 
                         response = await fetch(method.url, options);
-                        lastStatusCode = response.status;
                         
                         console.log(`Method ${{method.name}} response status:`, response.status);
                         
@@ -526,96 +825,15 @@ async def vto_interface(
                         lastError = `${{method.name}}: HTTP ${{response.status}} - ${{errorText}}`;
                         console.warn(lastError);
                         
-                        // Check if this is a service unavailable error (503)
-                        if (response.status === 503) {{
-                            let errorDetail = 'Service temporarily unavailable';
-                            try {{
-                                const errorData = JSON.parse(errorText);
-                                if (errorData.detail) {{
-                                    errorDetail = errorData.detail;
-                                }}
-                            }} catch (e) {{
-                                // If we can't parse JSON, use the text as is
-                                if (errorText.includes('not reachable') || errorText.includes('unavailable')) {{
-                                    errorDetail = errorText;
-                                }}
-                            }}
-                            serviceUnavailableError = new Error(errorDetail);
-                        }}
-                        
-                        // Check if this is a REAL authentication error (401/403 on primary methods)
-                        if ((response.status === 401 || response.status === 403) && 
-                            (method.name === 'Query parameter' || method.name === 'X-API-Key header')) {{
-                            let authErrorDetail = 'Authentication failed';
-                            try {{
-                                const errorData = JSON.parse(errorText);
-                                if (errorData.detail) {{
-                                    authErrorDetail = errorData.detail;
-                                }}
-                            }} catch (e) {{
-                                authErrorDetail = errorText || 'Invalid API key or credentials';
-                            }}
-                            authenticationError = new Error(authErrorDetail);
-                        }}
-                        
                     }} catch (err) {{
                         lastError = `${{method.name}}: ${{err.message}}`;
                         console.warn(lastError);
-                        
-                        // Check for network errors that indicate service issues
-                        if (err.message.includes('Failed to fetch') || 
-                            err.message.includes('NetworkError') ||
-                            err.message.includes('ECONNREFUSED')) {{
-                            serviceUnavailableError = new Error('Unable to connect to the server. Please check your internet connection and try again.');
-                        }}
                         continue;
                     }}
                 }}
 
-                if (!response) {{
-                    throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
-                }}
-
-                if (!response.ok) {{
-                    // Priority 1: If we encountered service unavailable errors during any attempt
-                    if (serviceUnavailableError) {{
-                        throw serviceUnavailableError;
-                    }}
-                    
-                    // Priority 2: If we have a REAL authentication error from primary methods
-                    if (authenticationError) {{
-                        throw authenticationError;
-                    }}
-                    
-                    // Priority 3: Check the final status code for other errors
-                    if (lastStatusCode === 401 || lastStatusCode === 403) {{
-                        // This might be from fallback methods, but if all methods failed with auth errors, it's likely real
-                        let authErrorDetail = 'Authentication failed';
-                        try {{
-                            const errorData = await response.json();
-                            if (errorData.detail) {{
-                                authErrorDetail = errorData.detail;
-                            }}
-                        }} catch (e) {{
-                            authErrorDetail = await response.text() || 'Invalid API key or credentials';
-                        }}
-                        throw new Error(authErrorDetail);
-                    }} else if (lastStatusCode === 500 || lastStatusCode === 503) {{
-                        let errorDetail = 'Service temporarily unavailable';
-                        try {{
-                            const errorData = await response.json();
-                            if (errorData.detail) {{
-                                errorDetail = errorData.detail;
-                            }}
-                        }} catch (e) {{
-                            errorDetail = await response.text() || 'Internal server error';
-                        }}
-                        throw new Error(errorDetail);
-                    }} else if (lastStatusCode === 429) {{
-                        throw new Error('Usage limit reached. Please try again later or upgrade your subscription.');
-                    }} else {{
-                        throw new Error(`Request failed with status ${{lastStatusCode}}. Please try again.`);
-                    }}
+                if (!response || !response.ok) {{
+                    throw new Error(`All authentication methods failed. Last error: ${{lastError}}`);
                 }}
 
                 const result = await response.json();
@@ -638,7 +856,18 @@ async def vto_interface(
                 const afterImage = document.getElementById('afterImage');
                 
                 beforeImage.src = uploadedImageData;
-                afterImage.src = uploadedImageData;
+                
+                // If we already have an after image (effect applied), keep it and only update before image
+                if (afterImageData) {{
+                    // We have existing effect, so we need to apply the same effect to new image
+                    afterImage.src = afterImageData;
+                    document.getElementById('toggleButtons').classList.remove('hidden');
+                    showComparison();
+                }} else {{
+                    // No effect applied yet, set both images to the same
+                    afterImage.src = uploadedImageData;
+                    showBefore();
+                }}
                 
                 beforeImage.style.position = 'relative';
                 afterImage.style.position = 'relative';
@@ -646,33 +875,12 @@ async def vto_interface(
                 document.getElementById('instructions-view').classList.add('hidden');
                 document.getElementById('tryon-view').classList.remove('hidden');
                 
-                showBefore();
-                
                 console.log('✅ Image processed and displayed successfully');
                 
             }} catch (error) {{
                 console.error('❌ Direct processing error:', error);
-                
-                // Provide more user-friendly error messages
-                let userMessage = error.message;
-                
-                if (error.message.includes('Virtual try-on service is not reachable') ||
-                    error.message.includes('Service temporarily unavailable') ||
-                    error.message.includes('not reachable') ||
-                    error.message.includes('connection') ||
-                    error.message.includes('unavailable')) {{
-                    userMessage = 'Our virtual try-on service is temporarily unavailable. Please try again in a few minutes.';
-                }} else if (error.message.includes('Authentication failed') ||
-                           error.message.includes('Invalid API key') ||
-                           error.message.includes('API key required')) {{
-                    userMessage = 'Authentication failed. Please check your API key and try again.';
-                }} else if (error.message.includes('Failed to fetch') ||
-                           error.message.includes('NetworkError') ||
-                           error.message.includes('Unable to connect')) {{
-                    userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
-                }}
-                
-                alert('Failed to process image: ' + userMessage);
+                alert('Failed to process image: ' + error.message);
+                throw error; // Re-throw to be caught by handleUpload
             }}
         }}
 
@@ -766,9 +974,16 @@ async def vto_interface(
                         applyBtn.textContent = 'Makeup Applied!';
                         applyBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
                         
+                        // Show product overlay
                         setTimeout(() => {{
-                            applyBtn.textContent = 'Reapply Makeup';
-                            applyBtn.style.background = 'linear-gradient(135deg, #e879f9, #c084fc)';
+                            document.getElementById('productOverlay').classList.add('visible');
+                        }}, 300);
+                        
+                        // Change to "Change Photo" after 2 seconds
+                        setTimeout(() => {{
+                            applyBtn.textContent = 'Change Photo';
+                            applyBtn.style.background = 'linear-gradient(135deg, rgb(0 0 0), rgb(223 0 152))';
+                            applyBtn.onclick = changePhoto; // Change the click handler
                         }}, 2000);
                     }};
                 }} else {{
@@ -780,11 +995,171 @@ async def vto_interface(
                 console.error('Makeup application error:', error);
                 alert('Failed to apply makeup: ' + error.message);
                 applyBtn.textContent = 'Apply Makeup';
+                applyBtn.onclick = handleApplyMakeup; // Reset to original handler
             }} finally {{
                 isProcessing = false;
                 applyBtn.disabled = false;
             }}
         }}
+
+        // New function to handle photo change - goes directly to gallery
+        function changePhoto() {{
+            // Trigger file input click directly to open gallery
+            document.getElementById('photoUpload').click();
+        }}
+
+        // Wishlist functionality
+        function toggleWishlist(forceState = null) {{
+            const wishlistBtn = document.getElementById('wishlistBtn');
+            const heartIcon = wishlistBtn.querySelector('i');
+            
+            if (forceState !== null) {{
+                isWishlisted = forceState;
+            }} else {{
+                isWishlisted = !isWishlisted;
+            }}
+            
+            if (isWishlisted) {{
+                wishlistBtn.classList.add('active');
+                // Change to filled heart
+                heartIcon.setAttribute('data-lucide', 'heart');
+                lucide.createIcons();
+                
+                // Save to localStorage
+                localStorage.setItem(`wishlist_${{PRODUCT_ID}}`, 'true');
+                
+                // Show confirmation (you can replace this with a toast notification)
+                console.log('Added to wishlist:', '{product_name}');
+            }} else {{
+                wishlistBtn.classList.remove('active');
+                // Change to outline heart
+                heartIcon.setAttribute('data-lucide', 'heart');
+                lucide.createIcons();
+                
+                // Remove from localStorage
+                localStorage.setItem(`wishlist_${{PRODUCT_ID}}`, 'false');
+                
+                console.log('Removed from wishlist:', '{product_name}');
+            }}
+        }}
+
+        // Modified handleUpload to preserve effects when changing photos
+        async function handleUploadWithEffectPreservation(event) {{
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            console.log('Changing photo while preserving effect...');
+            
+            // Show loader immediately
+            showUploadLoader();
+            
+            try {{
+                // Process the new image
+                await processImageDirectly(file);
+                
+                // If we had an effect applied before, re-apply it to the new image
+                if (afterImageData) {{
+                    console.log('Re-applying effect to new image...');
+                    await reapplyMakeupToNewImage();
+                }}
+                
+            }} catch (error) {{
+                console.error('Photo change error:', error);
+                alert('Failed to change photo: ' + error.message);
+            }} finally {{
+                // Always hide loader when done (success or error)
+                hideUploadLoader();
+            }}
+        }}
+
+        // Function to reapply makeup to new image
+        async function reapplyMakeupToNewImage() {{
+            if (!uploadedImageData || isProcessing) return;
+            
+            isProcessing = true;
+            const applyBtn = document.getElementById('apply-makeup-btn');
+            
+            try {{
+                const blob = base64ToBlob(uploadedImageData);
+                
+                // Try multiple auth methods for makeup application
+                const authMethods = [
+                    {{
+                        getFormData: () => {{
+                            const fd = new FormData();
+                            fd.append('image', blob, 'processed-image.jpg');
+                            fd.append('color', '{color}');
+                            fd.append('product_name', '{product_name}');
+                            return fd;
+                        }},
+                        url: `/api/vto/apply_{category}?api_key=${{encodeURIComponent(API_KEY)}}`
+                    }},
+                    {{
+                        getFormData: () => {{
+                            const fd = new FormData();
+                            fd.append('image', blob, 'processed-image.jpg');
+                            fd.append('color', '{color}');
+                            fd.append('product_name', '{product_name}');
+                            fd.append('api_key', API_KEY);
+                            return fd;
+                        }},
+                        url: '/api/vto/apply_{category}'
+                    }}
+                ];
+
+                let response;
+                for (const method of authMethods) {{
+                    try {{
+                        response = await fetch(method.url, {{
+                            method: 'POST',
+                            body: method.getFormData()
+                        }});
+                        if (response.ok) break;
+                    }} catch (err) {{
+                        continue;
+                    }}
+                }}
+
+                if (!response || !response.ok) {{
+                    const errorText = await response.text();
+                    throw new Error(`Failed to reapply makeup: ${{errorText}}`);
+                }}
+
+                const contentType = response.headers.get('content-type');
+                
+                if (contentType && contentType.includes('image/')) {{
+                    const imageBlob = await response.blob();
+                    const imageUrl = URL.createObjectURL(imageBlob);
+                    afterImageData = imageUrl;
+                    
+                    const afterImage = document.getElementById('afterImage');
+                    afterImage.src = imageUrl;
+                    
+                    afterImage.onload = function() {{
+                        showComparison();
+                        document.getElementById('toggleButtons').classList.remove('hidden');
+                        applyBtn.textContent = 'Change Photo';
+                        applyBtn.style.background = 'linear-gradient(135deg, rgb(0 0 0), rgb(223 0 152))';
+                        applyBtn.onclick = changePhoto;
+                        
+                        // Show product overlay
+                        setTimeout(() => {{
+                            document.getElementById('productOverlay').classList.add('visible');
+                        }}, 300);
+                    }};
+                }}
+                
+            }} catch (error) {{
+                console.error('Reapply makeup error:', error);
+                // If reapply fails, keep the old effect but show error
+                alert('Failed to reapply makeup to new photo: ' + error.message);
+            }} finally {{
+                isProcessing = false;
+            }}
+        }}
+
+        // Update the file input onchange to use the new function
+        document.getElementById('photoUpload').onchange = handleUploadWithEffectPreservation;
 
         function startSelfieMode() {{
             alert('Selfie mode would be implemented here');
