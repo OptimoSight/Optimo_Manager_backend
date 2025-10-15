@@ -34,10 +34,9 @@
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), timeout);
-                const response = await fetch(`${url}/api/vto/upload`, {
-                    method: "HEAD",
+                const response = await fetch(`${url}/api/health`, {
+                    method: "GET",
                     signal: controller.signal,
-                    headers: { "X-API-Key": "OptimosightGuest999" }
                 });
                 clearTimeout(timeoutId);
                 return response.ok;
@@ -45,13 +44,12 @@
                 return false;
             }
         }
-
         for (const url of possibleUrls) {
             if (await testUrl(url)) return url;
         }
 
         console.error("No URLs were reachable, falling back to:", possibleUrls[0]);
-        return possibleUrls[0];
+        return possibleUrls[0]; // Fallback to the first URL
     }
 
 

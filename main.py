@@ -58,6 +58,11 @@ app.add_middleware(
 )
 
 # ------------------ Middleware ------------------
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok"}
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     logger.info(f"Received request: {request.method} {request.url}")
