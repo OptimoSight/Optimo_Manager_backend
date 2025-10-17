@@ -42,8 +42,8 @@
 .vto-modal-content {
     background: #ffffff00;
     border-radius: 24px;
-    width: 22%;
-    height: 65%;
+    width: 380px;
+    height: 85vh;
     max-width: 1200px;
     max-height: 900px;
     min-width: 320px;
@@ -54,6 +54,14 @@
         0 0 0 1px rgba(0, 0, 0, 0.05);
     animation: vtoSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
+}
+
+/* Desktop specific sizing to match NYX interface */
+@media (min-width: 769px) {
+    .vto-modal-content {
+        width: 380px;
+        height: 85vh;
+    }
 }
 
 @keyframes vtoSlideUp {

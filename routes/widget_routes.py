@@ -71,6 +71,17 @@ async def vto_interface(
             display: flex;
             flex-direction: column;
             background: #000000;
+            max-width: 100%;
+            margin: 0 auto;
+        }}
+        
+        /* Desktop specific styles */
+        @media (min-width: 769px) {{
+            .vto-container {{
+                max-width: 600px;
+                height: 100vh;
+                box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            }}
         }}
         
         /* Top Toolbar */
@@ -224,36 +235,84 @@ async def vto_interface(
         .bottom-toolbar {{
             background: rgba(0, 0, 0, 0.98);
             border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px 16px;
+            padding: 20px 16px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
             backdrop-filter: blur(10px);
             flex-shrink: 0;
+        }}
+        
+        /* Tablet: Medium spacing */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .bottom-toolbar {{
+                padding: 16px 14px;
+                gap: 14px;
+            }}
+        }}
+        
+        /* Desktop: Compact toolbar */
+        @media (min-width: 769px) {{
+            .bottom-toolbar {{
+                padding: 10px 12px;
+                gap: 10px;
+            }}
         }}
         
         .makeup-categories {{
             display: flex;
             justify-content: space-around;
             align-items: center;
-            gap: 4px;
-            padding: 0 8px;
+            gap: 8px;
+            padding: 0;
+        }}
+        
+        /* Tablet: Medium gap */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .makeup-categories {{
+                gap: 6px;
+                padding: 0;
+            }}
+        }}
+        
+        /* Desktop: Compact gap */
+        @media (min-width: 769px) {{
+            .makeup-categories {{
+                gap: 4px;
+                padding: 0;
+            }}
         }}
         
         .category-btn {{
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background: transparent;
             border: none;
             cursor: pointer;
-            padding: 8px 4px;
-            border-radius: 8px;
+            padding: 5px 8px;
+            border-radius: 10px;
             transition: all 0.3s ease;
             color: rgba(255, 255, 255, 0.5);
             flex: 1;
             min-width: 0;
+        }}
+        
+        /* Tablet: Medium category buttons */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .category-btn {{
+                padding: 5px 6px;
+                gap: 4px;
+            }}
+        }}
+        
+        /* Desktop: Compact category buttons */
+        @media (min-width: 769px) {{
+            .category-btn {{
+                padding: 6px 4px;
+                gap: 4px;
+            }}
         }}
         
         .category-btn:hover {{
@@ -267,19 +326,64 @@ async def vto_interface(
         }}
         
         .category-icon {{
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
         }}
         
+        .category-icon svg {{
+            width: 28px;
+            height: 28px;
+        }}
+        
+        /* Tablet: Medium icons */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .category-icon {{
+                width: 32px;
+                height: 32px;
+            }}
+            
+            .category-icon svg {{
+                width: 24px;
+                height: 24px;
+            }}
+        }}
+        
+        /* Desktop: Compact icons */
+        @media (min-width: 769px) {{
+            .category-icon {{
+                width: 28px;
+                height: 28px;
+            }}
+            
+            .category-icon svg {{
+                width: 22px;
+                height: 22px;
+            }}
+        }}
+        
         .category-label {{
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             white-space: nowrap;
+        }}
+        
+        /* Tablet: Medium labels */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .category-label {{
+                font-size: 10px;
+            }}
+        }}
+        
+        /* Desktop: Compact labels */
+        @media (min-width: 769px) {{
+            .category-label {{
+                font-size: 9px;
+            }}
         }}
         
         /* Control Tabs */
@@ -294,8 +398,8 @@ async def vto_interface(
             background: transparent;
             border: none;
             color: rgba(255, 255, 255, 0.5);
-            padding: 12px 16px;
-            font-size: 13px;
+            padding: 14px 16px;
+            font-size: 14px;
             font-weight: 600;
             text-transform: uppercase;
             cursor: pointer;
@@ -303,6 +407,22 @@ async def vto_interface(
             border-bottom: 3px solid transparent;
             margin-bottom: -2px;
             letter-spacing: 0.5px;
+        }}
+        
+        /* Tablet: Medium tabs */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .tab-btn {{
+                padding: 12px 14px;
+                font-size: 13px;
+            }}
+        }}
+        
+        /* Desktop: Compact tabs */
+        @media (min-width: 769px) {{
+            .tab-btn {{
+                padding: 10px 12px;
+                font-size: 12px;
+            }}
         }}
         
         .tab-btn:hover {{
@@ -317,20 +437,52 @@ async def vto_interface(
         /* Shade Content */
         .shade-content {{
             display: none;
-            padding: 16px 0;
+            padding: 1px 0;
         }}
         
         .shade-content.active {{
             display: block;
         }}
         
+        /* Tablet: Medium padding */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .shade-content {{
+                padding: 1px 0;
+            }}
+        }}
+        
+        /* Desktop: Compact padding */
+        @media (min-width: 769px) {{
+            .shade-content {{
+                padding: 1px 0;
+            }}
+        }}
+        
         .shade-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 12px;
-            max-height: 150px;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 14px;
+            max-height: 180px;
             overflow-y: auto;
             padding: 4px;
+        }}
+        
+        /* Tablet: Medium shade grid */
+        @media (min-width: 481px) and (max-width: 768px) {{
+            .shade-grid {{
+                grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+                gap: 12px;
+                max-height: 160px;
+            }}
+        }}
+        
+        /* Desktop: Compact shade grid */
+        @media (min-width: 769px) {{
+            .shade-grid {{
+                grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+                gap: 10px;
+                max-height: 120px;
+            }}
         }}
         
         .shade-item {{
@@ -339,10 +491,10 @@ async def vto_interface(
             align-items: center;
             gap: 6px;
             cursor: pointer;
-            padding: 8px;
+            padding: 3px;
             border-radius: 8px;
             transition: all 0.3s ease;
-            border: 2px solid transparent;
+            border: 1px solid transparent;
         }}
         
         .shade-item:hover {{
@@ -370,7 +522,7 @@ async def vto_interface(
         
         .shade-name {{
             font-size: 10px;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255);
             text-align: center;
             max-width: 100%;
             overflow: hidden;
@@ -381,7 +533,7 @@ async def vto_interface(
         /* Compare Content */
         .compare-content {{
             display: none;
-            padding: 16px 0;
+            padding: 17px 0;
         }}
         
         .compare-content.active {{
@@ -474,10 +626,10 @@ async def vto_interface(
             bottom: 1px;
             left: 16px;
             right: 16px;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(20px);
             border-radius: 12px;
-            padding: 12px 16px;
+            padding: 6px 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
             z-index: 20;
             transform: translateY(160px);
@@ -715,6 +867,58 @@ async def vto_interface(
             box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
         }}
         
+        /* Terms and Conditions */
+        .terms-container {{
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        
+        .terms-checkbox {{
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            text-align: left;
+            margin-bottom: 16px;
+        }}
+        
+        .terms-checkbox input[type="checkbox"] {{
+            width: 20px;
+            height: 20px;
+            margin-top: 2px;
+            cursor: pointer;
+            accent-color: #e879f9;
+            flex-shrink: 0;
+        }}
+        
+        .terms-checkbox label {{
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.5;
+            cursor: pointer;
+        }}
+        
+        .terms-checkbox label a {{
+            color: #e879f9;
+            text-decoration: underline;
+        }}
+        
+        .terms-checkbox label a:hover {{
+            color: #c084fc;
+        }}
+        
+        .terms-error {{
+            font-size: 12px;
+            color: #f43f5e;
+            text-align: center;
+            margin-top: 8px;
+            display: none;
+        }}
+        
+        .terms-error.show {{
+            display: block;
+        }}
+        
         .hidden {{
             display: none !important;
         }}
@@ -750,8 +954,8 @@ async def vto_interface(
             }}
             
             .bottom-toolbar {{
-                padding: 12px;
-                gap: 12px;
+                padding: 0px;
+                gap: 0px;
             }}
             
             .category-icon {{
@@ -794,50 +998,72 @@ async def vto_interface(
     <!-- Main Container -->
     <div class="vto-container">
         <!-- Initial View -->
+        <!-- In the initial view section, add a close button -->
         <div id="initialView" class="initial-view">
+            <!-- Add close button to initial view -->
+                <div style="position: absolute; top: 12px; right: 12px; z-index: 160;">
+                    <button class="toolbar-btn" id="initialCloseBtn" title="Close" style="opacity: 0.7;">
+                        <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+                    </button>
+                </div>
+
             <div class="initial-content">
                 <div class="initial-logo">💄</div>
                 <h1 class="initial-title">Virtual Try-On</h1>
                 <p class="initial-subtitle">See how {product_name} looks on you instantly. Upload a photo or use your camera for the best experience.</p>
                 <div class="initial-buttons">
-                    <button class="initial-btn" onclick="startUploadMode()">
+                    <button class="initial-btn" id="uploadBtn">
                         <i data-lucide="upload" style="width: 20px; height: 20px;"></i>
                         Upload Photo
                     </button>
-                    <button class="initial-btn secondary" onclick="startCameraMode()">
+                    <button class="initial-btn secondary" id="cameraBtn">
                         <i data-lucide="camera" style="width: 20px; height: 20px;"></i>
                         Use Camera
                     </button>
-                    <button class="initial-btn secondary" onclick="useModelPhoto()">
+                    <button class="initial-btn secondary" id="modelBtn">
                         <i data-lucide="user" style="width: 20px; height: 20px;"></i>
                         Try on Model
                     </button>
                 </div>
-                <input type="file" id="photoUpload" accept="image/*" class="hidden" onchange="handleUpload(event)">
+                
+                <!-- Terms and Conditions -->
+                <div class="terms-container">
+                    <div class="terms-checkbox">
+                        <input type="checkbox" id="termsCheckbox">
+                        <label for="termsCheckbox">
+                            I agree to the <a href="#" id="termsLink">Terms & Conditions</a> and <a href="#" id="privacyLink">Privacy Policy</a>. I consent to my photo being processed for virtual try-on purposes.
+                        </label>
+                    </div>
+                    <div class="terms-error" id="termsError">
+                        Please accept the terms and conditions to continue
+                    </div>
+                </div>
+                
+                <input type="file" id="photoUpload" accept="image/*" class="hidden">
             </div>
         </div>
 
         <!-- Top Toolbar -->
         <div class="top-toolbar">
             <div class="toolbar-left">
-                <button class="toolbar-btn" onclick="goHome()" title="Home">
+                <button class="toolbar-btn" id="homeBtn" title="Home">
                     <i data-lucide="home" style="width: 20px; height: 20px;"></i>
                 </button>
-                <button class="toolbar-btn" onclick="resetToOriginal()" title="Reset">
+                <button class="toolbar-btn" id="resetBtn" title="Reset">
                     <i data-lucide="rotate-ccw" style="width: 20px; height: 20px;"></i>
                 </button>
-                <button class="toolbar-btn" onclick="showHelp()" title="Help">
+                <button class="toolbar-btn" id="helpBtn" title="Help">
                     <i data-lucide="help-circle" style="width: 20px; height: 20px;"></i>
                 </button>
             </div>
             <div class="toolbar-right">
-                <button class="toolbar-btn" onclick="downloadImage()" title="Download">
+                <button class="toolbar-btn" id="downloadBtn" title="Download">
                     <i data-lucide="download" style="width: 20px; height: 20px;"></i>
                 </button>
-                <button class="toolbar-btn" onclick="shareImage()" title="Share">
+                <button class="toolbar-btn" id="shareBtn" title="Share">
                     <i data-lucide="share-2" style="width: 20px; height: 20px;"></i>
                 </button>
-                <button class="toolbar-btn" onclick="closeVTO()" title="Close">
+                <button class="toolbar-btn" id="closeBtn" title="Close">
                     <i data-lucide="x" style="width: 20px; height: 20px;"></i>
                 </button>
             </div>
@@ -870,7 +1096,7 @@ async def vto_interface(
                             <i data-lucide="shopping-bag" style="width: 14px; height: 14px;"></i>
                             Buy Now
                         </a>
-                        <button class="wishlist-btn" id="wishlistBtn" onclick="toggleWishlist()">
+                        <button class="wishlist-btn" id="wishlistBtn">
                             <i data-lucide="heart" style="width: 18px; height: 18px;"></i>
                         </button>
                     </div>
@@ -882,31 +1108,31 @@ async def vto_interface(
         <div class="bottom-toolbar">
             <!-- Makeup Categories -->
             <div class="makeup-categories">
-                <button class="category-btn" data-category="looks" onclick="switchCategory('looks')">
+                <button class="category-btn" data-category="looks" id="looksBtn">
                     <div class="category-icon">
                         <i data-lucide="sparkles" style="width: 24px; height: 24px;"></i>
                     </div>
                     <span class="category-label">Looks</span>
                 </button>
-                <button class="category-btn active" data-category="foundation" onclick="switchCategory('foundation')">
+                <button class="category-btn" data-category="foundation" id="foundationBtn">
                     <div class="category-icon">
                         <i data-lucide="droplet" style="width: 24px; height: 24px;"></i>
                     </div>
                     <span class="category-label">Base</span>
                 </button>
-                <button class="category-btn" data-category="contour" onclick="switchCategory('contour')">
+                <button class="category-btn" data-category="contour" id="contourBtn">
                     <div class="category-icon">
                         <i data-lucide="circle-dot" style="width: 24px; height: 24px;"></i>
                     </div>
                     <span class="category-label">Contour</span>
                 </button>
-                <button class="category-btn" data-category="lips" onclick="switchCategory('lips')">
+                <button class="category-btn" data-category="lips" id="lipsBtn">
                     <div class="category-icon">
                         <i data-lucide="smile" style="width: 24px; height: 24px;"></i>
                     </div>
                     <span class="category-label">Lips</span>
                 </button>
-                <button class="category-btn" data-category="eyes" onclick="switchCategory('eyes')">
+                <button class="category-btn" data-category="eyes" id="eyesBtn">
                     <div class="category-icon">
                         <i data-lucide="eye" style="width: 24px; height: 24px;"></i>
                     </div>
@@ -916,8 +1142,8 @@ async def vto_interface(
             
             <!-- Control Tabs -->
             <div class="control-tabs">
-                <button class="tab-btn active" onclick="switchTab('shades')">Shades</button>
-                <button class="tab-btn" onclick="switchTab('compare')">Compare</button>
+                <button class="tab-btn active" id="shadesTab">Shades</button>
+                <button class="tab-btn" id="compareTab">Compare</button>
             </div>
             
             <!-- Tab Contents -->
@@ -931,18 +1157,16 @@ async def vto_interface(
             <!-- Compare Tab -->
             <div id="compareContent" class="compare-content">
                 <div class="compare-buttons">
-                    <button class="compare-btn" onclick="showBefore()">Before</button>
-                    <button class="compare-btn active" onclick="showComparison()">Split View</button>
-                    <button class="compare-btn" onclick="showAfter()">After</button>
+                    <button class="compare-btn" id="beforeBtn">Before</button>
+                    <button class="compare-btn active" id="comparisonBtn">Split View</button>
+                    <button class="compare-btn" id="afterBtn">After</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        lucide.createIcons();
-
-        // Configuration
+        <script>
+        // ============ Global Variables ============
         const API_KEY = '{api_key}';
         const CATEGORY = '{category}';
         const COLOR = '{color}';
@@ -952,8 +1176,10 @@ async def vto_interface(
         const PRODUCT_URL = '{product_url}';
         
         // Parse multiple colors and names
-        const COLORS = '{colors}'.split(',').map(c => c.trim());
-        const COLOR_NAMES = '{color_names}'.split(',').map(c => c.trim());
+        const COLORS_STRING = '{colors}';
+        const COLOR_NAMES_STRING = '{color_names}';
+        const COLORS = COLORS_STRING.split(',').map(c => c.trim());
+        const COLOR_NAMES = COLOR_NAMES_STRING.split(',').map(c => c.trim());
         
         // Category mapping for automatic selection
         const CATEGORY_MAPPING = {{
@@ -972,31 +1198,146 @@ async def vto_interface(
         let isDragging = false;
         let sliderPosition = 50;
         let isWishlisted = false;
-        let currentCategory = CATEGORY_MAPPING[CATEGORY] || 'lips';
+        let currentCategory = CATEGORY_MAPPING[CATEGORY] || 'foundation';
         let currentColorIndex = 0;
+        let hasMakeupApplied = false;
+        
+        // NEW: Cache for processed images by color index
+        let processedImagesCache = {{}};
+        let isFirstApplication = true;
 
-        // Initialize
-        window.addEventListener('load', function() {{
+        // ============ Initialization ============
+        document.addEventListener('DOMContentLoaded', function() {{
+            initializeApp();
+        }});
+
+        function initializeApp() {{
+            lucide.createIcons();
+            initializeEventListeners();
             initializeSlider();
             loadShades();
+            setActiveCategory();
             
             const savedWishlist = localStorage.getItem(`wishlist_${{PRODUCT_ID}}`);
             if (savedWishlist === 'true') {{
                 toggleWishlist(true);
             }}
-        }});
+        }}
+        
+        document.getElementById('initialCloseBtn').addEventListener('click', closeVTO);
+        
+        function initializeEventListeners() {{
+            // Initial view buttons
+            document.getElementById('uploadBtn').addEventListener('click', startUploadMode);
+            document.getElementById('cameraBtn').addEventListener('click', startCameraMode);
+            document.getElementById('modelBtn').addEventListener('click', useModelPhoto);
+            document.getElementById('termsLink').addEventListener('click', showTerms);
+            document.getElementById('privacyLink').addEventListener('click', showPrivacy);
+            document.getElementById('photoUpload').addEventListener('change', handleUpload);
+            
+            // Top toolbar buttons
+            document.getElementById('homeBtn').addEventListener('click', goHome);
+            document.getElementById('resetBtn').addEventListener('click', resetToOriginal);
+            document.getElementById('helpBtn').addEventListener('click', showHelp);
+            document.getElementById('downloadBtn').addEventListener('click', downloadImage);
+            document.getElementById('shareBtn').addEventListener('click', shareImage);
+            document.getElementById('closeBtn').addEventListener('click', closeVTO);
+            
+            // Bottom toolbar buttons
+            document.getElementById('looksBtn').addEventListener('click', () => switchCategory('looks'));
+            document.getElementById('foundationBtn').addEventListener('click', () => switchCategory('foundation'));
+            document.getElementById('contourBtn').addEventListener('click', () => switchCategory('contour'));
+            document.getElementById('lipsBtn').addEventListener('click', () => switchCategory('lips'));
+            document.getElementById('eyesBtn').addEventListener('click', () => switchCategory('eyes'));
+            
+            // Tab buttons
+            document.getElementById('shadesTab').addEventListener('click', () => switchTab('shades'));
+            document.getElementById('compareTab').addEventListener('click', () => switchTab('compare'));
+            
+            // Compare buttons
+            document.getElementById('beforeBtn').addEventListener('click', showBefore);
+            document.getElementById('comparisonBtn').addEventListener('click', showComparison);
+            document.getElementById('afterBtn').addEventListener('click', showAfter);
+            
+            // Wishlist button
+            document.getElementById('wishlistBtn').addEventListener('click', () => toggleWishlist());
+        }}
+
+        // Set active category based on product type
+        function setActiveCategory() {{
+            const activeCategory = CATEGORY_MAPPING[CATEGORY] || 'foundation';
+            
+            // Remove active class from all category buttons
+            document.querySelectorAll('.category-btn').forEach(btn => {{
+                btn.classList.remove('active');
+            }});
+            
+            // Add active class to the correct category
+            const activeCategoryBtn = document.querySelector('.category-btn[data-category="' + activeCategory + '"]');
+            if (activeCategoryBtn) {{
+                activeCategoryBtn.classList.add('active');
+            }}
+            
+            currentCategory = activeCategory;
+        }}
 
         // ============ Initial View Functions ============
         function startUploadMode() {{
+            // Check if terms are accepted
+            const termsCheckbox = document.getElementById('termsCheckbox');
+            const termsError = document.getElementById('termsError');
+            
+            if (!termsCheckbox.checked) {{
+                termsError.classList.add('show');
+                setTimeout(() => {{
+                    termsError.classList.remove('show');
+                }}, 3000);
+                return;
+            }}
+            
             document.getElementById('photoUpload').click();
         }}
 
         function startCameraMode() {{
+            // Check if terms are accepted
+            const termsCheckbox = document.getElementById('termsCheckbox');
+            const termsError = document.getElementById('termsError');
+            
+            if (!termsCheckbox.checked) {{
+                termsError.classList.add('show');
+                setTimeout(() => {{
+                    termsError.classList.remove('show');
+                }}, 3000);
+                return;
+            }}
+            
             alert('Camera mode: This would open the device camera for live try-on. Implementation requires camera API integration.');
         }}
 
         function useModelPhoto() {{
+            // Check if terms are accepted
+            const termsCheckbox = document.getElementById('termsCheckbox');
+            const termsError = document.getElementById('termsError');
+            
+            if (!termsCheckbox.checked) {{
+                termsError.classList.add('show');
+                setTimeout(() => {{
+                    termsError.classList.remove('show');
+                }}, 3000);
+                return;
+            }}
+            
             alert('Model mode: This would load a default model photo. Implementation requires default model images.');
+        }}
+
+        function showTerms(event) {{
+            event.preventDefault();
+            alert('Terms & Conditions:\\n\\n1. This virtual try-on tool is for preview purposes only\\n2. Colors may vary on different devices\\n3. Results are AI-generated approximations\\n4. Photos are processed securely and not stored\\n5. You must be 18+ or have parental consent\\n\\nFor full terms, visit our website.');
+        }}
+
+        function showPrivacy(event) {{
+            event.preventDefault();
+            alert('Privacy Policy:\\n\\n1. Your photos are processed in real-time\\n2. No photos are permanently stored on our servers\\n3. We do not share your images with third parties\\n4. Processing is done securely via encrypted connections\\n5. You can delete your session data at any time\\n\\nFor full privacy policy, visit our website.');
         }}
 
         // ============ Loading Functions ============
@@ -1118,8 +1459,29 @@ async def vto_interface(
         async function applyMakeup(colorIndex = 0) {{
             if (!uploadedImageData || isProcessing) return;
             
+            // NEW: Check if we already have this shade cached
+            if (processedImagesCache[colorIndex] && !isFirstApplication) {{
+                // Use cached image for instant switching
+                afterImageData = processedImagesCache[colorIndex];
+                document.getElementById('afterImage').src = afterImageData;
+                
+                // Update color display
+                const selectedColor = COLORS[colorIndex] || COLOR;
+                const selectedColorName = COLOR_NAMES[colorIndex] || COLOR_NAME;
+                document.getElementById('currentColorName').textContent = selectedColorName;
+                document.querySelector('.product-color .color-swatch').style.backgroundColor = selectedColor;
+                
+                hasMakeupApplied = true;
+                showAfter();
+                return;
+            }}
+            
             isProcessing = true;
-            showLoading();
+            
+            // NEW: Only show loading for first application
+            if (isFirstApplication) {{
+                showLoading();
+            }}
             
             try {{
                 const blob = base64ToBlob(uploadedImageData);
@@ -1135,7 +1497,7 @@ async def vto_interface(
                             fd.append('product_name', PRODUCT_NAME);
                             return fd;
                         }},
-                        url: `/api/vto/apply_{category}?api_key=${{encodeURIComponent(API_KEY)}}`
+                        url: `/api/vto/apply_${{CATEGORY}}?api_key=${{encodeURIComponent(API_KEY)}}`
                     }},
                     {{
                         getFormData: () => {{
@@ -1146,7 +1508,7 @@ async def vto_interface(
                             fd.append('api_key', API_KEY);
                             return fd;
                         }},
-                        url: '/api/vto/apply_{category}'
+                        url: `/api/vto/apply_${{CATEGORY}}`
                     }}
                 ];
 
@@ -1171,6 +1533,9 @@ async def vto_interface(
                 const imageUrl = URL.createObjectURL(imageBlob);
                 afterImageData = imageUrl;
                 
+                // NEW: Cache the processed image
+                processedImagesCache[colorIndex] = imageUrl;
+                
                 document.getElementById('afterImage').src = imageUrl;
                 
                 // Update color display
@@ -1184,14 +1549,24 @@ async def vto_interface(
                 document.getElementById('shadesContent').classList.add('active');
                 document.getElementById('compareContent').classList.remove('active');
                 
+                hasMakeupApplied = true;
+                
                 // Show after effect
-                showAfter();
+                setTimeout(() => {{
+                    showAfter();
+                }}, 100);
+                
+                // NEW: Mark first application as complete
+                isFirstApplication = false;
                 
             }} catch (error) {{
                 console.error('Makeup application error:', error);
+                alert('Failed to apply makeup: ' + error.message);
             }} finally {{
                 isProcessing = false;
-                hideLoading();
+                if (isFirstApplication) {{
+                    hideLoading();
+                }}
             }}
         }}
 
@@ -1262,7 +1637,7 @@ async def vto_interface(
             
             // Update compare buttons
             document.querySelectorAll('.compare-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.compare-btn')[1].classList.add('active');
+            document.getElementById('comparisonBtn').classList.add('active');
         }}
 
         function showBefore() {{
@@ -1274,13 +1649,18 @@ async def vto_interface(
             document.getElementById('sliderLine').classList.remove('active');
             document.getElementById('productOverlay').classList.remove('visible');
             
+            // Update compare buttons
             document.querySelectorAll('.compare-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.getElementById('beforeBtn').classList.add('active');
         }}
 
         function showComparison() {{
             showComparisonMode();
             document.getElementById('productOverlay').classList.add('visible');
+            
+            // Update compare buttons
+            document.querySelectorAll('.compare-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('comparisonBtn').classList.add('active');
         }}
 
         function showAfter() {{
@@ -1293,15 +1673,20 @@ async def vto_interface(
             document.getElementById('sliderLine').classList.remove('active');
             document.getElementById('productOverlay').classList.add('visible');
             
+            // Update compare buttons
             document.querySelectorAll('.compare-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.getElementById('afterBtn').classList.add('active');
         }}
 
         // ============ Tabs & Categories ============
         function switchTab(tabName) {{
             // Update tab buttons
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            if (tabName === 'shades') {{
+                document.getElementById('shadesTab').classList.add('active');
+            }} else if (tabName === 'compare') {{
+                document.getElementById('compareTab').classList.add('active');
+            }}
             
             // Hide all content
             document.querySelectorAll('.shade-content, .compare-content').forEach(content => {{
@@ -1312,11 +1697,15 @@ async def vto_interface(
             if (tabName === 'shades') {{
                 document.getElementById('shadesContent').classList.add('active');
                 // Show only after effect when in shades tab
-                showAfter();
+                setTimeout(() => {{
+                    showAfter();
+                }}, 100);
             }} else if (tabName === 'compare') {{
                 document.getElementById('compareContent').classList.add('active');
                 // Show comparison view when in compare tab
-                showComparison();
+                setTimeout(() => {{
+                    showComparison();
+                }}, 100);
             }}
         }}
 
@@ -1325,7 +1714,7 @@ async def vto_interface(
             
             // Update category buttons
             document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            document.getElementById(category + 'Btn').classList.add('active');
             
             console.log('Switched to category:', category);
             // In full implementation, this would load different products/shades
@@ -1341,7 +1730,7 @@ async def vto_interface(
                 
                 const shadeItem = document.createElement('div');
                 shadeItem.className = 'shade-item' + (index === currentColorIndex ? ' active' : '');
-                shadeItem.onclick = () => selectShade(index);
+                shadeItem.addEventListener('click', () => selectShade(index));
                 
                 shadeItem.innerHTML = `
                     <div class="shade-swatch" style="background-color: ${{color}};"></div>
@@ -1353,7 +1742,17 @@ async def vto_interface(
         }}
 
         async function selectShade(index) {{
-            if (index === currentColorIndex || !uploadedImageData) return;
+            // Check if user has uploaded a photo first
+            if (!uploadedImageData) {{
+                alert('Please upload a photo first to try on shades.');
+                return;
+            }}
+            
+            // Optimization - don't reapply if clicking the same shade that's already applied
+            if (index === currentColorIndex && hasMakeupApplied) {{
+                console.log('Same shade already applied, skipping reapplication');
+                return;
+            }}
             
             currentColorIndex = index;
             
@@ -1362,7 +1761,7 @@ async def vto_interface(
                 item.classList.toggle('active', i === index);
             }});
             
-            // Apply new shade
+            // Apply new shade (this will use cache if available)
             await applyMakeup(index);
         }}
 
@@ -1395,7 +1794,7 @@ async def vto_interface(
             
             const link = document.createElement('a');
             link.href = afterImageData;
-            link.download = `vto-${{PRODUCT_NAME.replace(/\s+/g, '-')}}-${{Date.now()}}.jpg`;
+            link.download = `vto-${{PRODUCT_NAME.replace(/\\s+/g, '-')}}-${{Date.now()}}.jpg`;
             link.click();
         }}
 
@@ -1449,12 +1848,16 @@ Tips:
             // Reset everything
             uploadedImageData = null;
             afterImageData = null;
+            processedImagesCache = {{}}; // NEW: Clear cache
+            isFirstApplication = true; // NEW: Reset first application flag
             document.getElementById('beforeImage').src = '';
             document.getElementById('beforeImage').style.display = 'none';
             document.getElementById('afterImage').src = '';
             document.getElementById('afterImage').style.display = 'none';
             document.getElementById('productOverlay').classList.remove('visible');
             document.getElementById('sliderLine').classList.remove('active');
+            
+            hasMakeupApplied = false;
         }}
 
         function resetToOriginal() {{
@@ -1468,7 +1871,9 @@ Tips:
             document.getElementById('afterImage').src = uploadedImageData;
             document.getElementById('productOverlay').classList.remove('visible');
             
-            // Reset to first shade
+            hasMakeupApplied = false;
+            
+            // Reset to first shade (but don't reapply makeup)
             currentColorIndex = 0;
             document.querySelectorAll('.shade-item').forEach((item, i) => {{
                 item.classList.toggle('active', i === 0);
@@ -1493,6 +1898,7 @@ Tips:
             setTimeout(() => {{
                 uploadedImageData = null;
                 afterImageData = null;
+                processedImagesCache = {{}}; // NEW: Clear cache
                 isProcessing = false;
                 document.body.style.opacity = '1';
                 document.body.style.transition = '';
