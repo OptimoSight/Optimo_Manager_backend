@@ -51,7 +51,7 @@ app = FastAPI(title="OptimoSight VTO API", version="2.0.0")
 # ------------------ CORS ------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://localhost:3000", "https://192.168.50.148:3000", "https://192.168.0.111:3000", "https://localhost:42414", "https://192.168.0.111:42414", "https://127.0.0.1:42414", "https://192.168.50.148:42414", "https://optimosight.github.io"],
+    allow_origins=["https://localhost:3000", "https://192.168.50.148:3000", "https://192.168.0.111:3000", "https://localhost:42414", "https://192.168.0.111:42414", "https://127.0.0.1:42414", "https://192.168.50.148:42414", "https://optimosight.github.io", "https://103.174.51.143:42414"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

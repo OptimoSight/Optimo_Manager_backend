@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Auto-detect environment and set VTO service URL
-if os.getenv("ENVIRONMENT") == "production" or os.getenv("RENDER"):
+if os.getenv("ENVIRONMENT") == "production":
     # Production environment (Render.com, etc.)
-    VTO_SERVICE_URL = "https://vto.onrender.com"
+    VTO_SERVICE_URL = "https://103.174.51.143"
     print("🚀 Using PRODUCTION VTO service:", VTO_SERVICE_URL)
 else:
     # Development/Local environment

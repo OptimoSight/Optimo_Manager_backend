@@ -16,7 +16,7 @@
         // ✅ Force production base URL when running on GitHub Pages
         if (hostname.includes("github.io")) {
             console.log("Running on GitHub Pages – forcing backend base URL");
-            return "https://optimo-manager-backend.onrender.com";
+            return "https://103.174.51.143:42413/";
         }
 
         // ✅ Local network detection and reachability test
@@ -25,7 +25,8 @@
             "https://192.168.0.111:42413",
             "https://localhost:42413",
             "https://optimosight.github.io",
-            "https://optimo-manager-backend.onrender.com"
+            "https://optimo-manager-backend.onrender.com",
+            "https://103.174.51.143:42413/"
         ];
 
         const timeout = 2000; // 2 seconds timeout per request
@@ -294,6 +295,7 @@
                 'https://localhost:42414',
                 'https://optimosight.github.io',
                 'https://optimo-manager-backend.onrender.com',
+                'https://103.174.51.143:42413/',
                 CONFIG.baseUrl,
                 window.location.origin
             ];
@@ -305,6 +307,7 @@
                 event.origin.includes('192.168.50.148') ||
                 event.origin.includes('optimosight.github.io') ||
                 event.origin.includes('optimo-manager-backend.onrender.com') ||
+                event.origin.includes('103.174.51.143') ||
                 event.origin.includes('localhost')
             );
 
