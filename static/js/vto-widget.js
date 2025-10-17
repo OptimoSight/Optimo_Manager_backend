@@ -295,7 +295,7 @@
                 'https://localhost:42414',
                 'https://optimosight.github.io',
                 'https://optimo-manager-backend.onrender.com',
-                'https://103.174.51.143:42413/',
+                'https://103.174.51.143/',
                 CONFIG.baseUrl,
                 window.location.origin
             ];
